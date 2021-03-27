@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Docker基础(四)——数据持久化&amp;单机集群部署实战 | 莫逝的博客</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="作为Docker学习笔记，数据持久化、部署实战相关，以备后查。 虚拟机地址为实验环境，折腾较多，示例不保证能随时访问。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker基础(四)——数据持久化&amp;单机集群部署实战">
+<meta property="og:url" content="https://moshi.site/2019/11/09/Docker%E5%9F%BA%E7%A1%80(%E5%9B%9B)%E2%80%94%E2%80%94%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96-%E5%8D%95%E6%9C%BA%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2%E5%AE%9E%E6%88%98/index.html">
+<meta property="og:site_name" content="莫逝的博客">
+<meta property="og:description" content="作为Docker学习笔记，数据持久化、部署实战相关，以备后查。 虚拟机地址为实验环境，折腾较多，示例不保证能随时访问。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://moshi.site/images/docker/types-of-mounts.png">
+<meta property="og:image" content="https://moshi.site/images/docker/percona-xtradb-cluster.jpg">
+<meta property="og:image" content="https://moshi.site/images/docker/haproxy_monitor.jpg">
+<meta property="og:image" content="https://moshi.site/images/docker/nginx_springboot_mysql.jpg">
+<meta property="article:published_time" content="2019-11-08T17:58:28.000Z">
+<meta property="article:modified_time" content="2020-06-28T13:38:41.677Z">
+<meta property="article:author" content="莫逝">
+<meta property="article:tag" content="Docker">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://moshi.site/images/docker/types-of-mounts.png">
+  
+    <link rel="alternate" href="/atom.xml" title="莫逝的博客" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">莫逝的博客</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">首页</a>
+        
+          <a class="main-nav-link" href="/archives">归档</a>
+        
+          <a class="main-nav-link" href="/about">关于我</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://moshi.site"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Docker基础(四)——数据持久化-单机集群部署实战" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/09/Docker%E5%9F%BA%E7%A1%80(%E5%9B%9B)%E2%80%94%E2%80%94%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96-%E5%8D%95%E6%9C%BA%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2%E5%AE%9E%E6%88%98/" class="article-date">
+  <time datetime="2019-11-08T17:58:28.000Z" itemprop="datePublished">2019-11-09</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/">容器云</a>►<a class="article-category-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/Docker/">Docker</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Docker基础(四)——数据持久化&amp;单机集群部署实战
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>作为Docker学习笔记，数据持久化、部署实战相关，以备后查。 虚拟机地址为实验环境，折腾较多，示例不保证能随时访问。 </p>
+<span id="more"></span>
+
+<h3 id="Docker数据持久化"><a href="#Docker数据持久化" class="headerlink" title="Docker数据持久化"></a>Docker数据持久化</h3><p>默认情况下容器内创建的所有文件都存储在可写容器层上。即：</p>
+<ul>
+<li>当该容器不再存在时，数据就就会丢失。</li>
+<li>容器的可写层与运行容器的主机紧密耦合，无法轻松地将数据移动到其他地方。</li>
+<li>写入容器的可写层需要存储驱动程序来管理文件系统。存储驱动程序使用Linux内核提供的union filesystem。与使用直接写入主机文件系统的数据卷相比，这种额外的抽象降低了性能。</li>
+</ul>
+<p>Docker为容器提供了两种方式来将文件存储在主机中：<em>volumes</em>和<em>bind mounts</em>，这样即使容器停止后文件也可以保存。如果在Linux上运行Docker，还可以使用<em>tmpfs mount</em>；如果在Windows上运行Docker，则还可以使用<em>named pipe</em>。</p>
+<p>无论使用哪种方式，在容器的文件系统中都可以看作 关联的目录或单个文件。可以根据数据在Docker主机上的存储位置来理解不同方式之间的差别，如下图所示：</p>
+<p><img src="/images/docker/types-of-mounts.png" title="Docker持久化"> </p>
+<ul>
+<li><em>Volumes</em>存储在由Docker管理的主机文件系统中的某个位置(在Linux上的目录为/var/lib/docker/volumes/)。非Docker进程不应该修改文件系统的这一部分。<em>Volumes</em>是在Docker中持久化保存数据的最佳方式。</li>
+<li><em>Bind mounts</em>可以存储在主机系统的任何位置，甚至可能是重要的系统文件或目录中。Docker主机上的非Docker进程或Docker容器可以随时对其进行修改。</li>
+<li><em>tmpfs mount</em>仅存储在主机的内存中，不会写入到主机的文件系统中。</li>
+</ul>
+<h4 id="Volumes"><a href="#Volumes" class="headerlink" title="Volumes"></a>Volumes</h4><ol>
+<li><p>创建mysql容器</p>
+<p><code>docker run -d --name mysql01 -e MYSQL_ROOT_PASSWORD=cph123 mysql</code></p>
+</li>
+<li><p>列出所有volume </p>
+<p><code>docker volume ls</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">DRIVER              VOLUME NAME</span><br><span class="line">local               6f97012d2f8521c73a3cb84e0073fe66233bdb26eaae9c25d57f56388ea26d75</span><br></pre></td></tr></table></figure></li>
+<li><p>检查指定volume</p>
+<p><code>docker volume inspect 6f97012d2f8521c73a3cb84e0073fe66233bdb26eaae9c25d57f56388ea26d75</code></p>
+</li>
+<li><p>使用-v参数指定volume名称</p>
+<p><code>docker run -d --name mysql01 -v mysql01_volume:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=cph123 mysql</code></p>
+</li>
+<li><p>再次查看volume</p>
+<p> <code>docker volume ls</code></p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">DRIVER              VOLUME NAME</span><br><span class="line">local               6f97012d2f8521c73a3cb84e0073fe66233bdb26eaae9c25d57f56388ea26d75</span><br><span class="line">local               mysql01_volume</span><br></pre></td></tr></table></figure></li>
+<li><p>检查指定volume </p>
+<p><code>docker inspect mysql01_volume</code></p>
+</li>
+</ol>
+<h5 id="持久化测试"><a href="#持久化测试" class="headerlink" title="持久化测试"></a>持久化测试</h5><ol>
+<li><p>进入容器中  <code>docker exec -it mysql01 bash</code> </p>
+</li>
+<li><p>登录mysql  <code>mysql -uroot -pcph123</code></p>
+</li>
+<li><p>创建测试库  <code>create database db_test;</code></p>
+</li>
+<li><p>退出mysql、container</p>
+</li>
+<li><p>删除mysql容器 <code>docker rm -f mysql01</code></p>
+</li>
+<li><p>查看volume <code>docker volume ls</code>  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">DRIVER              VOLUME NAME</span><br><span class="line">local               6f97012d2f8521c73a3cb84e0073fe66233bdb26eaae9c25d57f56388ea26d75</span><br><span class="line">local               mysql01_volume</span><br></pre></td></tr></table></figure></li>
+<li><p>新建mysql container，指定使用mysql01_volume</p>
+<p> <code>docker run -d --name test-mysql -v mysql01_volume:/var/lib/mysql -e MYSQL_ROOT_PASSWORD=cph123 mysql</code></p>
+</li>
+<li><p>进入容器中，登录mysql服务器，查看数据库，可以看到db_test仍然存在</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">+--------------------+</span><br><span class="line">| Database           |</span><br><span class="line">+--------------------+</span><br><span class="line">| db_test            |</span><br><span class="line">| information_schema |</span><br><span class="line">| mysql              |</span><br><span class="line">| performance_schema |</span><br><span class="line">| sys                |</span><br><span class="line">+--------------------+</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h4 id="Bind-mounts"><a href="#Bind-mounts" class="headerlink" title="Bind mounts"></a>Bind mounts</h4><ol>
+<li><p>创建tomcat容器 </p>
+<p><code>docker run -d --name tomcat01 -p 9090:8080 -v /tmp/test:/usr/local/tomcat/webapps/test tomcat</code></p>
+</li>
+<li><p>查看对应目录</p>
+<ul>
+<li><p>centos7：/tmp/test</p>
+</li>
+<li><p>tomcat01容器：/usr/local/webapps/test</p>
+</li>
+</ul>
+</li>
+<li><p>在centos的/tmp/test/目录下新建a.html</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">&lt;p style&#x3D;&quot;color:red; font-size&#x3D;40pt;&quot;&gt;Bind mounts test&lt;&#x2F;p&gt;</span><br></pre></td></tr></table></figure></li>
+<li><p>进入tomcat容器对应目录下发现存在相同内容的a.html</p>
+<ul>
+<li><p>centos7：curl localhost:9090/test/a.html</p>
+</li>
+<li><p>windows浏览器中： <a target="_blank" rel="noopener" href="http://45.32.103.56:9090/test/a.html">http://45.32.103.56:9090/test/a.html</a> </p>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="单机集群部署实战"><a href="#单机集群部署实战" class="headerlink" title="单机集群部署实战"></a>单机集群部署实战</h3><h4 id="搭建MySQL高可用集群"><a href="#搭建MySQL高可用集群" class="headerlink" title="搭建MySQL高可用集群"></a>搭建MySQL高可用集群</h4><p>模拟集群环境示例：</p>
+<p><img src="/images/docker/percona-xtradb-cluster.jpg" title="MySQL高可用集群">  </p>
+<ol>
+<li><p>拉取镜像 </p>
+<p><code>docker pull percona/percona-xtradb-cluster:5.7.21</code></p>
+</li>
+<li><p>重命名镜像(方便操作) </p>
+<p><code>docker tag percona/percona-xtradb-cluster:5.7.21 pxc</code></p>
+</li>
+<li><p>创建单独网段供mysql集群使用 </p>
+<ul>
+<li><p>创建 <code>docker network create --subnet=172.18.0.0/24 pxc-net</code></p>
+</li>
+<li><p>查看网段详情 <code>docker network inspect pxc-net</code></p>
+</li>
+<li><p>删除网段 <code>docker network rm pxc-net</code></p>
+</li>
+</ul>
+</li>
+<li><p>创建和删除volume(提前创建v1、v2、v3以备后续使用)</p>
+<ul>
+<li><p>创建 <code>docker volume create --name v1</code></p>
+</li>
+<li><p>查看详情 <code>docker volume inspect v1</code></p>
+</li>
+<li><p>删除 <code>docker volume inspect v1</code></p>
+</li>
+</ul>
+</li>
+</ol>
+<h5 id="搭建pxc-mysql-集群"><a href="#搭建pxc-mysql-集群" class="headerlink" title="搭建pxc[mysql]集群"></a>搭建pxc[mysql]集群</h5><ol>
+<li><p>创建node1</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -d -p 3306:3306 -v v1:&#x2F;var&#x2F;lib&#x2F;mysql -e MYSQL_ROOT_PASSWORD&#x3D;cph123 -e CLUSTER_NAME&#x3D;PXC -e XTRABACKUP_PASSWORD&#x3D;cph123 --privileged --name&#x3D;node1 --net&#x3D;pxc-net --ip 172.18.0.2 pxc</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>-e CLUSTER_NAME=PXC</code> 指定PXC集群名字</li>
+<li><code>-e XTRABACKUP_PASSWORD=cph123</code> 指定数据库同步密码</li>
+<li><code>--privileged</code> 设置优先级</li>
+</ul>
+</li>
+<li><p>创建node2</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -d -p 3302:3306 -v v2:&#x2F;var&#x2F;lib&#x2F;mysql -e MYSQL_ROOT_PASSWORD&#x3D;cph123 -e CLUSTER_NAME&#x3D;PXC -e XTRABACKUP_PASSWORD&#x3D;cph123 -e CLUSTER_JOIN&#x3D;node1 --privileged --name&#x3D;node2 --net&#x3D;pxc-net --ip 172.18.0.3 pxc</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li><code>-e CLUSTER_JOIN=node1</code> 将该数据库加入到节点node1上组成集群</li>
+</ul>
+</li>
+<li><p>创建node3</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -d -p 3303:3306 -v v3:&#x2F;var&#x2F;lib&#x2F;mysql -e MYSQL_ROOT_PASSWORD&#x3D;cph123 -e CLUSTER_NAME&#x3D;PXC -e XTRABACKUP_PASSWORD&#x3D;cph123 -e CLUSTER_JOIN&#x3D;node1 --privileged --name&#x3D;node3 --net&#x3D;pxc-net --ip 172.18.0.4 pxc</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h5 id="数据库负载均衡"><a href="#数据库负载均衡" class="headerlink" title="数据库负载均衡"></a>数据库负载均衡</h5><ol>
+<li><p>拉取haproxy镜像 </p>
+<p><code>docker pull haproxy</code></p>
+</li>
+<li><p>创建haproxy配置文件(使用bind mounts方式)  </p>
+<p><code>touch /tmp/haproxy/haproxy.cfg</code>  </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><span class="line">global</span><br><span class="line">    #工作目录，这边要和创建容器指定的目录对应</span><br><span class="line">    chroot &#x2F;usr&#x2F;local&#x2F;etc&#x2F;haproxy</span><br><span class="line">    #日志文件</span><br><span class="line">    log 127.0.0.1 local5 info</span><br><span class="line">    #守护进程运行</span><br><span class="line">    daemon</span><br><span class="line">defaults</span><br><span class="line">    log global</span><br><span class="line">    mode http</span><br><span class="line">    #日志格式</span><br><span class="line">    option httplog</span><br><span class="line">    #日志中不记录负载均衡的心跳检测记录</span><br><span class="line">    option dontlognull</span><br><span class="line">    #连接超时（毫秒）</span><br><span class="line">    timeout connect 5000</span><br><span class="line">    #客户端超时（毫秒）</span><br><span class="line">    timeout client 50000</span><br><span class="line">    #服务器超时（毫秒）</span><br><span class="line">    timeout server 50000</span><br><span class="line">    #监控界面</span><br><span class="line">    listen admin_stats</span><br><span class="line">    #监控界面的访问的IP和端口</span><br><span class="line">    bind 0.0.0.0:8888</span><br><span class="line">    #访问协议</span><br><span class="line">    mode http</span><br><span class="line">    #URI相对地址</span><br><span class="line">    stats uri &#x2F;dbs_monitor</span><br><span class="line">    #统计报告格式</span><br><span class="line">    stats realm Global\ statistics</span><br><span class="line">    #登陆帐户信息</span><br><span class="line">    stats auth admin:admin</span><br><span class="line">    #数据库负载均衡</span><br><span class="line">    listen proxy-mysql</span><br><span class="line">    #访问的IP和端口，haproxy开发的端口为3306</span><br><span class="line">    #假如有人访问haproxy的3306端口，则将请求转发给下面的数据库实例</span><br><span class="line">    bind 0.0.0.0:3306</span><br><span class="line">    #网络协议</span><br><span class="line">    mode tcp</span><br><span class="line">    #负载均衡算法（轮询算法）</span><br><span class="line">    #轮询算法：roundrobin</span><br><span class="line">    #权重算法：static-rr</span><br><span class="line">    #最少连接算法：leastconn</span><br><span class="line">    #请求源IP算法：source</span><br><span class="line">    balance roundrobin</span><br><span class="line">    #日志格式</span><br><span class="line">    option tcplog</span><br><span class="line">    #在MySQL中创建一个没有权限的haproxy用户，密码为空。</span><br><span class="line">    #Haproxy使用这个账户对MySQL数据库心跳检测</span><br><span class="line">    option mysql-check user haproxy</span><br><span class="line">    server MySQL_1 172.18.0.2:3306 check weight 1 maxconn 2000</span><br><span class="line">    server MySQL_2 172.18.0.3:3306 check weight 1 maxconn 2000</span><br><span class="line">    server MySQL_3 172.18.0.4:3306 check weight 1 maxconn 2000</span><br><span class="line">    #使用keepalive检测死链</span><br><span class="line">    option tcpka</span><br></pre></td></tr></table></figure></li>
+<li><p>创建haproxy镜像</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">docker run -it -d -p 8888:8888 -p 3307:3306 -v &#x2F;tmp&#x2F;haproxy:&#x2F;usr&#x2F;local&#x2F;etc&#x2F;haproxy --name haproxy01 --privileged --net&#x3D;pxc-net haproxy</span><br></pre></td></tr></table></figure>
+
+<ul>
+<li>创建node1时占用了3306端口，此处对外提供3307端口</li>
+</ul>
+</li>
+<li><p>使用指定的配置文件启动haproxy</p>
+<ul>
+<li><code>docker exec -it haproxy01 bash</code></li>
+<li><code>haproxy -f /usr/local/etc/haproxy/haproxy.cfg</code></li>
+</ul>
+</li>
+<li><p>MySQL数据库中创建haproxy用户，用于心跳检测</p>
+<ul>
+<li><p><code>CREATE USER &#39;haproxy&#39;@&#39;%&#39; IDENTIFIED BY &#39;&#39;;</code></p>
+</li>
+<li><p>如果创建用户失败，执行以下命令</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">drop user &#39;haproxy&#39;@&#39;%&#39;;</span><br><span class="line">flush privileges;</span><br><span class="line">CREATE USER &#39;haproxy&#39;@&#39;%&#39; IDENTIFIED BY &#39;&#39;;</span><br></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>windows中浏览器访问监控界面： <a target="_blank" rel="noopener" href="http://45.32.103.56:8888/dbs_monitor">http://45.32.103.56:8888/dbs_monitor</a> ，默认用户名/密码：admin/admin</p>
+<p><img src="/images/docker/haproxy_monitor.jpg" title="Haproxy监控">  </p>
+</li>
+<li><p>windows中通过haproxy连接数据库集群，进行数据操作可验证集群同步情况^_^</p>
+</li>
+</ol>
+<h4 id="搭建Nginx-Spring-Boot-MySQL环境"><a href="#搭建Nginx-Spring-Boot-MySQL环境" class="headerlink" title="搭建Nginx+Spring Boot+MySQL环境"></a>搭建Nginx+Spring Boot+MySQL环境</h4><p>模拟集群环境示例:</p>
+<p><img src="/images/docker/nginx_springboot_mysql.jpg">  </p>
+<h5 id="搭建MySQL"><a href="#搭建MySQL" class="headerlink" title="搭建MySQL"></a>搭建MySQL</h5><ol>
+<li><p>创建volume</p>
+<p> <code>docker volume create v1_pro</code></p>
+</li>
+<li><p>创建mysql容器 </p>
+<p><code>docker run -d --name my-mysql -v v1_pro:/var/lib/mysql -p 3301:3306 -e MYSQL_ROOT_PASWORD=cph123 --net=pro-net --ip 172.19.0.6 mysql</code></p>
+</li>
+<li><p>使用DataGrip连接数据库，执行以下语句</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">create schema db_springboot collate utf8mb4_0900_ai_ci;</span><br><span class="line">use db_springboot;</span><br><span class="line">create table t_user</span><br><span class="line">(</span><br><span class="line">id int not null</span><br><span class="line">primary key,</span><br><span class="line">username varchar(50) not null,</span><br><span class="line">password varchar(50) not null,</span><br><span class="line">number varchar(100) not null</span><br><span class="line">);</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h5 id="搭建Spring-Boot项目"><a href="#搭建Spring-Boot项目" class="headerlink" title="搭建Spring Boot项目"></a>搭建Spring Boot项目</h5><ol>
+<li><p>基于Spring Boot+MyBatis实现CRUD操作，项目名称为“springboot-mybatis”</p>
+</li>
+<li><p>项目根目录下执行 mvn clean package打出jar包并上传至docker环境中</p>
+</li>
+<li><p>创建Dockerfile</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">FROM openjdk:8-jre-alpine</span><br><span class="line">MAINTAINER cph</span><br><span class="line">LABEL name&#x3D;&quot;springboot-mybatis&quot; version&#x3D;&quot;1.0&quot; author&#x3D;&quot;cph&quot;</span><br><span class="line">COPY springboot-mybatis-0.0.1-SNAPSHOT.jar springboot-mybatis.jar</span><br><span class="line">CMD [&quot;java&quot;,&quot;-jar&quot;,&quot;springboot-mybatis.jar&quot;]</span><br></pre></td></tr></table></figure></li>
+<li><p>基于Dockerfile构建镜像 <code>docker build -t sbm-image .</code></p>
+</li>
+<li><p>创建java应用的Container  <code>docker run -d --name sbc1 -p 8081:8080 --net=pro-net --ip 172.19.0.11 sbm-image</code>  </p>
+</li>
+<li><p>查看启动日志 <code>docker logs sbc1</code></p>
+</li>
+<li><p>在windows浏览器中访问： <a target="_blank" rel="noopener" href="http://45.32.103.56:8081/user/listall">http://45.32.103.56:8081/user/listall</a> </p>
+</li>
+<li><p>继续创建多个java应用的Container</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker run -d --name sbc2 -p 8082:8080 --net&#x3D;pro-net --ip 172.19.0.12 sbm-image</span><br><span class="line">docker run -d --name sbc3 -p 8083:8080 --net&#x3D;pro-net --ip 172.19.0.13 sbm-image</span><br></pre></td></tr></table></figure></li>
+</ol>
+<h5 id="搭建Nginx"><a href="#搭建Nginx" class="headerlink" title="搭建Nginx"></a>搭建Nginx</h5><ol>
+<li><p>在centos的/tmp/nginx/目录下新建nginx.conf，进行相应配置</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">user nginx;</span><br><span class="line">worker_processes 1;</span><br><span class="line">events &#123;</span><br><span class="line">    worker_connections 1024;</span><br><span class="line">&#125; </span><br><span class="line">http &#123;</span><br><span class="line">    include &#x2F;etc&#x2F;nginx&#x2F;mime.types;</span><br><span class="line">    default_type application&#x2F;octet-stream;</span><br><span class="line">    sendfile on;</span><br><span class="line">    keepalive_timeout 65;</span><br><span class="line">	</span><br><span class="line">    server &#123;</span><br><span class="line">        listen 80;</span><br><span class="line">        location &#x2F; &#123;</span><br><span class="line">        proxy_pass http:&#x2F;&#x2F;balance;</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">	</span><br><span class="line">	upstream balance&#123;</span><br><span class="line">        server 172.19.0.11:8080;</span><br><span class="line">        server 172.19.0.12:8080;</span><br><span class="line">        server 172.19.0.13:8080;</span><br><span class="line">    &#125; </span><br><span class="line">	include &#x2F;etc&#x2F;nginx&#x2F;conf.d&#x2F;*.conf;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></li>
+<li><p>创建nginx容器</p>
+<p><code>docker run -d --name my-nginx -p 80:80 -v /tmp/nginx/nginx.conf:/etc/nginx/nginx.conf --network=pro-net --ip 172.19.0.10 nginx</code></p>
+</li>
+<li><p>在windows浏览器中访问  <a target="_blank" rel="noopener" href="http://45.32.103.56/user/listall">http://45.32.103.56/user/listall</a> ，能看到返回数据表示集群搭建成功^_^</p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://moshi.site/2019/11/09/Docker%E5%9F%BA%E7%A1%80(%E5%9B%9B)%E2%80%94%E2%80%94%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96-%E5%8D%95%E6%9C%BA%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2%E5%AE%9E%E6%88%98/" data-id="ckmreatvt001pyoso99n429mz" class="article-share-link">Share</a>
+      
+	  
+        <a href="/2019/11/09/Docker%E5%9F%BA%E7%A1%80(%E5%9B%9B)%E2%80%94%E2%80%94%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96-%E5%8D%95%E6%9C%BA%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2%E5%AE%9E%E6%88%98/#comments" class="article-comment-link">
+          <span class="post-comments-count valine-comment-count" data-xid="/2019/11/09/Docker%E5%9F%BA%E7%A1%80(%E5%9B%9B)%E2%80%94%E2%80%94%E6%95%B0%E6%8D%AE%E6%8C%81%E4%B9%85%E5%8C%96-%E5%8D%95%E6%9C%BA%E9%9B%86%E7%BE%A4%E9%83%A8%E7%BD%B2%E5%AE%9E%E6%88%98/" itemprop="commentCount"></span>
+          留言
+        </a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/" rel="tag">Docker</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/11/12/Docker%E5%9F%BA%E7%A1%80(%E4%BA%94)%E2%80%94%E2%80%94%E5%AE%B9%E5%99%A8%E7%BC%96%E6%8E%92/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Docker基础(五)——容器编排
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/11/05/Docker%E5%9F%BA%E7%A1%80(%E4%B8%89)%E2%80%94%E2%80%94%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Docker基础(三)——网络通信</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+  <section id="comments" class="vcomment">
+  </section>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/">Java Web</a><span class="category-list-count">3</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Quartz/">Quartz</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Redis/">Redis</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Spring/">Spring</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-%E5%9F%BA%E7%A1%80/">Java 基础</a><span class="category-list-count">12</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-%E5%9F%BA%E7%A1%80/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a><span class="category-list-count">12</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/">容器云</a><span class="category-list-count">8</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/Docker/">Docker</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/K8s/">K8s</a><span class="category-list-count">3</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/">工作总结</a><span class="category-list-count">6</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/%E6%96%B9%E6%B3%95/">方法</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/%E8%A7%84%E8%8C%83/">规范</a><span class="category-list-count">3</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E7%A8%8B%E5%8C%96/">工程化</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E7%A8%8B%E5%8C%96/Git/">Git</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">微服务</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/JHipster/">JHipster</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E7%B4%A2%E5%BC%95/">索引</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9A%8F%E7%AC%94%E6%9D%82%E8%AE%B0/">随笔杂记</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9A%8F%E7%AC%94%E6%9D%82%E8%AE%B0/%E8%AF%BB%E4%B9%A6/">读书</a><span class="category-list-count">1</span></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Docker/" style="font-size: 16.67px;">Docker</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/JHipster/" style="font-size: 10px;">JHipster</a> <a href="/tags/K8s/" style="font-size: 13.33px;">K8s</a> <a href="/tags/Quartz/" style="font-size: 10px;">Quartz</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/%E5%B8%B8%E7%94%A8%E6%9C%AF%E8%AF%AD/" style="font-size: 10px;">常用术语</a> <a href="/tags/%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98/" style="font-size: 10px;">排查问题</a> <a href="/tags/%E6%90%9C%E7%B4%A2%E6%8A%80%E5%B7%A7/" style="font-size: 10px;">搜索技巧</a> <a href="/tags/%E6%96%87%E6%A1%A3%E8%A7%84%E8%8C%83/" style="font-size: 10px;">文档规范</a> <a href="/tags/%E7%89%88%E6%9C%AC%E5%91%BD%E5%90%8D/" style="font-size: 10px;">版本命名</a> <a href="/tags/%E7%B4%A2%E5%BC%95/" style="font-size: 10px;">索引</a> <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" style="font-size: 20px;">设计模式</a> <a href="/tags/%E8%AF%BB%E4%B9%A6%E6%96%B9%E6%B3%95/" style="font-size: 10px;">读书方法</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/04/25/Redis%E5%9F%BA%E7%A1%80%E7%AF%87/">Redis基础篇</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/12/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%E7%BC%96%E5%86%99%E8%A7%84%E8%8C%83/">技术文档编写规范</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/23/K8s%E5%9F%BA%E7%A1%80(%E4%B8%89)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3%E5%8F%8A%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/">K8s基础(三)——组件详解及网络通信</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/17/K8s%E5%9F%BA%E7%A1%80(%E4%BA%8C)%E2%80%94%E2%80%94%E6%90%AD%E5%BB%BAK8s%E9%9B%86%E7%BE%A4/">K8s基础(二)——搭建K8s集群</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/13/K8s%E5%9F%BA%E7%A1%80(%E4%B8%80)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E7%AE%80%E4%BB%8B/">K8s基础(一)——组件简介</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2021 莫逝<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">首页</a>
+  
+    <a href="/archives" class="mobile-nav-link">归档</a>
+  
+    <a href="/about" class="mobile-nav-link">关于我</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  
+<script src="https://unpkg.com/valine@latest/dist/Valine.min.js"></script>
+
+<script>
+    var GUEST_INFO = ['nick','mail','link'];
+    var guest_info = 'nick,mail,link'.split(',').filter(function(item){
+        return GUEST_INFO.indexOf(item) > -1
+    });
+    var notify = 'true' == true;
+    var verify = 'true' == true;
+    new Valine({
+        el: '.vcomment',
+        notify: notify,
+        verify: verify,
+        appId: "Bq4tWlGoDjJFOFoLkmRUSsQt-gzGzoHsz",
+        appKey: "t63uIiBLF5M4zBj6BYPa3uPC",
+        placeholder: "Just go go",
+        pageSize:'10',
+        avatar:'mm',
+        lang:'zh-cn'
+    });
+</script>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>K8s基础(一)——组件简介 | 莫逝的博客</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="作为K8s学习笔记，介绍相关组件、单机环境搭建，以备后查。 “Kubernetes(K8s)是一个开源项目，用于自动化部署、扩缩容和管理容器化的应用。它将组成应用程序的容器分组为逻辑单元，以便于管理和发现”。简单来说就是容器编排工具，官方文档中介绍说K8s在Google生产环境中有15年的运行经验，并且吸纳了社区中很多好的想法和实践。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="K8s基础(一)——组件简介">
+<meta property="og:url" content="https://moshi.site/2019/11/13/K8s%E5%9F%BA%E7%A1%80(%E4%B8%80)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E7%AE%80%E4%BB%8B/index.html">
+<meta property="og:site_name" content="莫逝的博客">
+<meta property="og:description" content="作为K8s学习笔记，介绍相关组件、单机环境搭建，以备后查。 “Kubernetes(K8s)是一个开源项目，用于自动化部署、扩缩容和管理容器化的应用。它将组成应用程序的容器分组为逻辑单元，以便于管理和发现”。简单来说就是容器编排工具，官方文档中介绍说K8s在Google生产环境中有15年的运行经验，并且吸纳了社区中很多好的想法和实践。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://moshi.site/images/k8s/k8s_container.png">
+<meta property="og:image" content="https://moshi.site/images/k8s/k8s_pod.png">
+<meta property="og:image" content="https://moshi.site/images/k8s/k8s_replicaset.png">
+<meta property="og:image" content="https://moshi.site/images/k8s/k8s_deployment.png">
+<meta property="og:image" content="https://moshi.site/images/k8s/k8s_label.png">
+<meta property="og:image" content="https://moshi.site/images/k8s/k8s_service.png">
+<meta property="og:image" content="https://moshi.site/images/k8s/k8s_node.png">
+<meta property="og:image" content="https://moshi.site/images/k8s/k8s_cluster.png">
+<meta property="og:image" content="https://moshi.site/images/k8s/k8s_components2.png">
+<meta property="og:image" content="https://moshi.site/images/k8s/pre-ccm-arch.png">
+<meta property="article:published_time" content="2019-11-13T14:10:56.000Z">
+<meta property="article:modified_time" content="2020-06-28T13:39:04.945Z">
+<meta property="article:author" content="莫逝">
+<meta property="article:tag" content="K8s">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://moshi.site/images/k8s/k8s_container.png">
+  
+    <link rel="alternate" href="/atom.xml" title="莫逝的博客" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">莫逝的博客</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">首页</a>
+        
+          <a class="main-nav-link" href="/archives">归档</a>
+        
+          <a class="main-nav-link" href="/about">关于我</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://moshi.site"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-K8s基础(一)——组件简介" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/13/K8s%E5%9F%BA%E7%A1%80(%E4%B8%80)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E7%AE%80%E4%BB%8B/" class="article-date">
+  <time datetime="2019-11-13T14:10:56.000Z" itemprop="datePublished">2019-11-13</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/">容器云</a>►<a class="article-category-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/K8s/">K8s</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      K8s基础(一)——组件简介
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>作为K8s学习笔记，介绍相关组件、单机环境搭建，以备后查。</p>
+<p>“Kubernetes(K8s)是一个开源项目，用于自动化部署、扩缩容和管理容器化的应用。它将组成应用程序的容器分组为逻辑单元，以便于管理和发现”。简单来说就是容器编排工具，官方文档中介绍说K8s在Google生产环境中有15年的运行经验，并且吸纳了社区中很多好的想法和实践。</p>
+<span id="more"></span>
+
+<h3 id="概念-amp-组件"><a href="#概念-amp-组件" class="headerlink" title="概念&amp;组件"></a>概念&amp;组件</h3><ul>
+<li>历史  <a target="_blank" rel="noopener" href="https://queue.acm.org/detail.cfm?id=2898444">https://queue.acm.org/detail.cfm?id=2898444</a> </li>
+<li>官方文档 <a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/">https://kubernetes.io/docs/concepts/</a> </li>
+</ul>
+<ol>
+<li><p>K8s既然是容器编排工具，一定少不了最基础的Container</p>
+<p><img src="/images/k8s/k8s_container.png" title="Container">  </p>
+</li>
+<li><p>操作Container最初由Docker来进行的，K8s中有自己的最小操作单位，称为Pod。Pod可以理解为一个或多个Container的组合</p>
+<p><img src="/images/k8s/k8s_pod.png" title="Pod">  </p>
+</li>
+<li><p>Pod的维护交给ReplicaSet去做，通过Selector来进行管理</p>
+<p><img src="/images/k8s/k8s_replicaset.png" title="ReplicaSet">  </p>
+</li>
+<li><p>Pod和ReplicaSet的状态需要维护和监测，于是就有了Deployment</p>
+<p><img src="/images/k8s/k8s_deployment.png" title="Deployment">  </p>
+</li>
+<li><p>相同或有关联的Pod需要分类管理——Label</p>
+<p><img src="/images/k8s/k8s_label.png" title="Label">  </p>
+</li>
+<li><p>具有相同Label的服务需要有个名称，即Service</p>
+<p><img src="/images/k8s/k8s_service.png" title="Service">  </p>
+</li>
+<li><p>Pod运行在Docker主机中，这个主机就被称为Node</p>
+<p><img src="/images/k8s/k8s_node.png" title="Node">  </p>
+</li>
+<li><p>以上概念作为整体来展示，如下所示：</p>
+<p><img src="/images/k8s/k8s_cluster.png" title="Cluster">  </p>
+</li>
+<li><p>集群想要完成工作应该需要一些组件支持，如下所示：</p>
+<p><img src="/images/k8s/k8s_components2.png" title="Components">  </p>
+<ul>
+<li>kubectl 作为操作集群的客户端，发送交互请求</li>
+<li>请求应该先到达Master Node，再分发给Worker node执行创建Pod等操作。请求需要认证授权</li>
+<li>APIServer Master Node中由它来接收请求</li>
+<li>Scheduler APIServer需要根据一定的调度策略来分发请求</li>
+<li>Controller 具体执行请求</li>
+<li>kube-proxy 在Worker Node接收请求</li>
+<li>kubelet 创建Pod(Docker创建container)</li>
+<li>DNS 域名解析</li>
+<li>ETCD 分布式存储(各节点信息)</li>
+<li>Dashboard 监控集群状态</li>
+<li>fluentd 日志收集</li>
+</ul>
+</li>
+<li><p>官网提供的架构图</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/concepts/architecture/cloud-controller/">https://kubernetes.io/docs/concepts/architecture/cloud-controller/</a> </li>
+</ul>
+</li>
+</ol>
+<p><img src="/images/k8s/pre-ccm-arch.png" title="pre-ccm-arch"> </p>
+<p>​    </p>
+<h3 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h3><h4 id="可选方案"><a href="#可选方案" class="headerlink" title="可选方案"></a>可选方案</h4><ol>
+<li>  原生方式</li>
+</ol>
+<ul>
+<li><p>Kelsey Hightower  <a target="_blank" rel="noopener" href="https://github.com/kelseyhightower/kubernetes-the-hard-way">https://github.com/kelseyhightower/kubernetes-the-hard-way</a></p>
+</li>
+<li><p>对Linux网络、安全等相关知识要求较高，有时间再折腾</p>
+</li>
+</ul>
+<ol start="2">
+<li>  在线实验环境 </li>
+</ol>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://labs.play-with-k8s.com/">https://labs.play-with-k8s.com/</a></li>
+<li>只能试用4h</li>
+</ul>
+<ol start="3">
+<li><p>Cloud上搭建</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kops">https://github.com/kubernetes/kops</a>   </li>
+</ul>
+</li>
+<li><p>企业级解决方案CoreOS</p>
+<ul>
+<li>  <a target="_blank" rel="noopener" href="https://coreos.com/tectonic/">https://coreos.com/tectonic/</a>  </li>
+</ul>
+</li>
+<li><p>Minikube</p>
+<ul>
+<li>本地单节点</li>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/setup/learning-environment/minikube/">https://kubernetes.io/docs/setup/learning-environment/minikube/</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/kubernetes/minikube">https://github.com/kubernetes/minikube</a>  </li>
+</ul>
+</li>
+<li><p>Kubeadm</p>
+<ul>
+<li>本地多节点</li>
+<li> <a target="_blank" rel="noopener" href="https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/">https://kubernetes.io/docs/setup/production-environment/tools/kubeadm/install-kubeadm/</a> </li>
+<li><a target="_blank" rel="noopener" href="https://github.com/kubernetes/kubeadm">https://github.com/kubernetes/kubeadm</a></li>
+</ul>
+</li>
+</ol>
+<h4 id="搭建Minikube单节点"><a href="#搭建Minikube单节点" class="headerlink" title="搭建Minikube单节点"></a>搭建Minikube单节点</h4><h5 id="Windows"><a href="#Windows" class="headerlink" title="Windows"></a>Windows</h5><ul>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-windows">https://kubernetes.io/docs/tasks/tools/install-kubectl/#install-kubectl-on-windows</a></li>
+<li><a target="_blank" rel="noopener" href="https://kubernetes.io/docs/tasks/tools/install-minikube/">https://kubernetes.io/docs/tasks/tools/install-minikube/</a></li>
+</ul>
+<h5 id="Centos"><a href="#Centos" class="headerlink" title="Centos"></a>Centos</h5><ol>
+<li><p>安装Docker</p>
+</li>
+<li><p>安装Kubectl</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"># 01 下载</span><br><span class="line">curl -LO https:&#x2F;&#x2F;storage.googleapis.com&#x2F;kubernetes-release&#x2F;release&#x2F;&#96;curl -s</span><br><span class="line">https:&#x2F;&#x2F;storage.googleapis.com&#x2F;kubernetesrelease&#x2F;release&#x2F;stable.txt&#96;&#x2F;bin&#x2F;linux&#x2F;amd64&#x2F;kubectl</span><br><span class="line"></span><br><span class="line"># 02 授权</span><br><span class="line">chmod +x .&#x2F;kubectl</span><br><span class="line"></span><br><span class="line"># 03 添加到环境变量</span><br><span class="line">sudo mv .&#x2F;kubectl &#x2F;usr&#x2F;local&#x2F;bin&#x2F;kubectl</span><br><span class="line"></span><br><span class="line"># 04 检查</span><br><span class="line">kubectl version</span><br></pre></td></tr></table></figure></li>
+<li><p>安装Minikube</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"># 01 下载安装授权</span><br><span class="line">curl -Lo minikube</span><br><span class="line">https:&#x2F;&#x2F;storage.googleapis.com&#x2F;minikube&#x2F;releases&#x2F;latest&#x2F;minikube-linux-amd64 \</span><br><span class="line">&amp;&amp; chmod +x minikube</span><br><span class="line"></span><br><span class="line"># 02 添加到环境变量</span><br><span class="line">sudo mkdir -p &#x2F;usr&#x2F;local&#x2F;bin&#x2F;</span><br><span class="line">sudo install minikube &#x2F;usr&#x2F;local&#x2F;bin&#x2F;</span><br><span class="line"></span><br><span class="line"># 03 检查</span><br><span class="line">minikube version</span><br></pre></td></tr></table></figure></li>
+<li><p>使用Minikube创建单节点K8s</p>
+<p><code>minikube start --vm-driver=none</code>  </p>
+</li>
+</ol>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://moshi.site/2019/11/13/K8s%E5%9F%BA%E7%A1%80(%E4%B8%80)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E7%AE%80%E4%BB%8B/" data-id="ckmreatvz001zyoso8kfc2smd" class="article-share-link">Share</a>
+      
+	  
+        <a href="/2019/11/13/K8s%E5%9F%BA%E7%A1%80(%E4%B8%80)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E7%AE%80%E4%BB%8B/#comments" class="article-comment-link">
+          <span class="post-comments-count valine-comment-count" data-xid="/2019/11/13/K8s%E5%9F%BA%E7%A1%80(%E4%B8%80)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E7%AE%80%E4%BB%8B/" itemprop="commentCount"></span>
+          留言
+        </a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/K8s/" rel="tag">K8s</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/11/17/K8s%E5%9F%BA%E7%A1%80(%E4%BA%8C)%E2%80%94%E2%80%94%E6%90%AD%E5%BB%BAK8s%E9%9B%86%E7%BE%A4/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          K8s基础(二)——搭建K8s集群
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/11/12/Docker%E5%9F%BA%E7%A1%80(%E4%BA%94)%E2%80%94%E2%80%94%E5%AE%B9%E5%99%A8%E7%BC%96%E6%8E%92/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Docker基础(五)——容器编排</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+  <section id="comments" class="vcomment">
+  </section>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/">Java Web</a><span class="category-list-count">3</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Quartz/">Quartz</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Redis/">Redis</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Spring/">Spring</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-%E5%9F%BA%E7%A1%80/">Java 基础</a><span class="category-list-count">12</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-%E5%9F%BA%E7%A1%80/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a><span class="category-list-count">12</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/">容器云</a><span class="category-list-count">8</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/Docker/">Docker</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/K8s/">K8s</a><span class="category-list-count">3</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/">工作总结</a><span class="category-list-count">6</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/%E6%96%B9%E6%B3%95/">方法</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/%E8%A7%84%E8%8C%83/">规范</a><span class="category-list-count">3</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E7%A8%8B%E5%8C%96/">工程化</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E7%A8%8B%E5%8C%96/Git/">Git</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">微服务</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/JHipster/">JHipster</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E7%B4%A2%E5%BC%95/">索引</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9A%8F%E7%AC%94%E6%9D%82%E8%AE%B0/">随笔杂记</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9A%8F%E7%AC%94%E6%9D%82%E8%AE%B0/%E8%AF%BB%E4%B9%A6/">读书</a><span class="category-list-count">1</span></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Docker/" style="font-size: 16.67px;">Docker</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/JHipster/" style="font-size: 10px;">JHipster</a> <a href="/tags/K8s/" style="font-size: 13.33px;">K8s</a> <a href="/tags/Quartz/" style="font-size: 10px;">Quartz</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/%E5%B8%B8%E7%94%A8%E6%9C%AF%E8%AF%AD/" style="font-size: 10px;">常用术语</a> <a href="/tags/%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98/" style="font-size: 10px;">排查问题</a> <a href="/tags/%E6%90%9C%E7%B4%A2%E6%8A%80%E5%B7%A7/" style="font-size: 10px;">搜索技巧</a> <a href="/tags/%E6%96%87%E6%A1%A3%E8%A7%84%E8%8C%83/" style="font-size: 10px;">文档规范</a> <a href="/tags/%E7%89%88%E6%9C%AC%E5%91%BD%E5%90%8D/" style="font-size: 10px;">版本命名</a> <a href="/tags/%E7%B4%A2%E5%BC%95/" style="font-size: 10px;">索引</a> <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" style="font-size: 20px;">设计模式</a> <a href="/tags/%E8%AF%BB%E4%B9%A6%E6%96%B9%E6%B3%95/" style="font-size: 10px;">读书方法</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/04/25/Redis%E5%9F%BA%E7%A1%80%E7%AF%87/">Redis基础篇</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/12/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%E7%BC%96%E5%86%99%E8%A7%84%E8%8C%83/">技术文档编写规范</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/23/K8s%E5%9F%BA%E7%A1%80(%E4%B8%89)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3%E5%8F%8A%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/">K8s基础(三)——组件详解及网络通信</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/17/K8s%E5%9F%BA%E7%A1%80(%E4%BA%8C)%E2%80%94%E2%80%94%E6%90%AD%E5%BB%BAK8s%E9%9B%86%E7%BE%A4/">K8s基础(二)——搭建K8s集群</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/13/K8s%E5%9F%BA%E7%A1%80(%E4%B8%80)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E7%AE%80%E4%BB%8B/">K8s基础(一)——组件简介</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2021 莫逝<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">首页</a>
+  
+    <a href="/archives" class="mobile-nav-link">归档</a>
+  
+    <a href="/about" class="mobile-nav-link">关于我</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  
+<script src="https://unpkg.com/valine@latest/dist/Valine.min.js"></script>
+
+<script>
+    var GUEST_INFO = ['nick','mail','link'];
+    var guest_info = 'nick,mail,link'.split(',').filter(function(item){
+        return GUEST_INFO.indexOf(item) > -1
+    });
+    var notify = 'true' == true;
+    var verify = 'true' == true;
+    new Valine({
+        el: '.vcomment',
+        notify: notify,
+        verify: verify,
+        appId: "Bq4tWlGoDjJFOFoLkmRUSsQt-gzGzoHsz",
+        appKey: "t63uIiBLF5M4zBj6BYPa3uPC",
+        placeholder: "Just go go",
+        pageSize:'10',
+        avatar:'mm',
+        lang:'zh-cn'
+    });
+</script>
+
+  </div>
+</body>
+</html>

@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Docker基础(二)——镜像、容器 | 莫逝的博客</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="作为Docker学习笔记，以备后查。虚拟机地址为实验环境，折腾较多，示例不保证能随时访问。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Docker基础(二)——镜像、容器">
+<meta property="og:url" content="https://moshi.site/2019/11/03/Docker%E5%9F%BA%E7%A1%80(%E4%BA%8C)%E2%80%94%E2%80%94%E9%95%9C%E5%83%8F%E3%80%81%E5%AE%B9%E5%99%A8/index.html">
+<meta property="og:site_name" content="莫逝的博客">
+<meta property="og:description" content="作为Docker学习笔记，以备后查。虚拟机地址为实验环境，折腾较多，示例不保证能随时访问。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-11-03T08:46:54.000Z">
+<meta property="article:modified_time" content="2020-06-28T13:38:25.847Z">
+<meta property="article:author" content="莫逝">
+<meta property="article:tag" content="Docker">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="莫逝的博客" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">莫逝的博客</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">首页</a>
+        
+          <a class="main-nav-link" href="/archives">归档</a>
+        
+          <a class="main-nav-link" href="/about">关于我</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://moshi.site"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Docker基础(二)——镜像、容器" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2019/11/03/Docker%E5%9F%BA%E7%A1%80(%E4%BA%8C)%E2%80%94%E2%80%94%E9%95%9C%E5%83%8F%E3%80%81%E5%AE%B9%E5%99%A8/" class="article-date">
+  <time datetime="2019-11-03T08:46:54.000Z" itemprop="datePublished">2019-11-03</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/">容器云</a>►<a class="article-category-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/Docker/">Docker</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Docker基础(二)——镜像、容器
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>作为Docker学习笔记，以备后查。虚拟机地址为实验环境，折腾较多，示例不保证能随时访问。</p>
+<span id="more"></span>
+
+<h3 id="镜像（Image）"><a href="#镜像（Image）" class="headerlink" title="镜像（Image）"></a>镜像（Image）</h3><h4 id="定义"><a href="#定义" class="headerlink" title="定义"></a>定义</h4><ul>
+<li>一个只读的模板，模板中包含创建docker容器的指令，每条指令都会在镜像中创建一层layer<ul>
+<li>GitHub <a target="_blank" rel="noopener" href="https://github.com/docker-library">https://github.com/docker-library</a> </li>
+</ul>
+</li>
+</ul>
+<h4 id="Dockerfile"><a href="#Dockerfile" class="headerlink" title="Dockerfile"></a>Dockerfile</h4><ul>
+<li>FROM 指定基础镜像。例， <code>FROM openjdk:8-jdk</code> </li>
+<li>RUN 在镜像内部执行一些命令（安装软件、配置环境等）。例， <code>RUN mkdir -p &quot;$CATALINA_HOME&quot;</code> </li>
+<li>ENV 设置变量的值，可通过docker run –e key=value修改;也可以直接使用${MYSQL_MAJOR}。例，  <code>ENV MYSQL_MAJOR 5.7</code>  </li>
+<li>LABEL 设置镜像标签。例， <code>LABEL name=&quot;crazyman&quot;</code></li>
+<li>VOLUME 指定数据的挂载目录。例，<code>VOLUME /var/lib/mysql</code>  </li>
+<li>COPY 将宿主机的文件复制到镜像内，如果目录不存在，会自动创建所需目录。仅仅复制，不会提取和解压。例，  <code>COPY docker-entrypoint.sh /usr/local/bin/</code>  </li>
+<li>ADD 将宿主机的文件复制到镜像内，与COPY类似，只不过会对文件提取和解压。例，<code>ADD application.yml /etc/itcrazy2016/</code>  </li>
+<li>WORKDIR 指定镜像的工作目录，之后的命令都是基于此目录工作，若不存在则自动创建。例，<code>WORKDIR /usr/local</code>  </li>
+<li>CMD 容器启动时默认执行的命令，例，<code>CMD [&quot;mysqld&quot;]</code> 。若有多个CMD命令，则最后一个生效。</li>
+<li>ENTRYPOINT 和CMD使用类似，区别在于执行<code>docker run</code>时，CMD命令会被覆盖，ENTRYPOINT命令不会被覆盖 。例，<code>ENTRYPOINT [&quot;docker-entrypoint.sh&quot;]</code>  </li>
+<li>EXPOSE 指定镜像要暴露的端口，启动镜像时，可用-p将该端口映射给宿主机。例， <code>EXPOSE 8080</code> </li>
+</ul>
+<h4 id="利用Dockerfile生成镜像"><a href="#利用Dockerfile生成镜像" class="headerlink" title="利用Dockerfile生成镜像"></a>利用Dockerfile生成镜像</h4><ul>
+<li><p>新建spring-boot示例项目</p>
+</li>
+<li><p>运行<code>mvn clean package</code> 打成jar包<code>dockerfile-demo-0.0.1-SNAPSHOT.jar</code></p>
+</li>
+<li><p>在docker环境中新建目录 first-dockerfile</p>
+</li>
+<li><p>上传jar包至first-dockerfile。新建文件Dockerfile，内容如下</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">FROM openjdk:8</span><br><span class="line">MAINTAINER cph</span><br><span class="line">LABEL name&#x3D;&quot;dockerfile-demo&quot; version&#x3D;&quot;1.0&quot; author&#x3D;&quot;cph&quot;</span><br><span class="line">COPY dockerfile-demo-0.0.1-SNAPSHOT.jar dockerfile-image.jar</span><br><span class="line">CMD [&quot;java&quot;,&quot;-jar&quot;,&quot;dockerfile-image.jar&quot;]</span><br></pre></td></tr></table></figure></li>
+<li><p>生成镜像 <code>docker build -t [image name] .</code>（最后的”<strong>.</strong>“表示Dockerfile在当前目录）</p>
+</li>
+</ul>
+<h4 id="镜像仓库（Registry）"><a href="#镜像仓库（Registry）" class="headerlink" title="镜像仓库（Registry）"></a>镜像仓库（Registry）</h4><h5 id="官方-Docker-Hub"><a href="#官方-Docker-Hub" class="headerlink" title="官方 Docker Hub"></a>官方 Docker Hub</h5><ul>
+<li><a target="_blank" rel="noopener" href="https://hub.docker.com/">https://hub.docker.com/</a> </li>
+<li>在docker机器上登录 <code>docker login</code></li>
+<li>输入username、password</li>
+<li>重命名镜像 <code>docker tag dockerfile-image chenpenghui93/dockerfile-image</code><ul>
+<li>镜像名称要和docker id一致</li>
+</ul>
+</li>
+<li>推送镜像 <code>docker push chenpenghui93/dockerfile-image</code></li>
+<li>拉取镜像 <code>docker pull chenpenghui93/dockerfile-image</code></li>
+<li>运行 <code>docker run -d --name first-docker-image -p 6666:8080 chenpenghui93/dockerfile-image</code></li>
+</ul>
+<h5 id="阿里云-Docker-Hub"><a href="#阿里云-Docker-Hub" class="headerlink" title="阿里云 Docker Hub"></a>阿里云 Docker Hub</h5><ul>
+<li><a target="_blank" rel="noopener" href="https://cr.console.aliyun.com/cn-hangzhou/instances/repositories">https://cr.console.aliyun.com/cn-hangzhou/instances/repositories</a> </li>
+<li>登录 <code>sudo docker login --username=chenpenghui93@hotmail.com registry.cn-hangzhou.aliyuncs.com</code></li>
+<li>输入密码</li>
+<li>重命名镜像 <code>sudo docker tag [container name/id] registry.cn-hangzhou.aliyuncs.com/crazyman/aliyun-dockerfile-image</code></li>
+<li>推送镜像 <code>sudo docker push registry.cn-hangzhou.aliyuncs.com/crazyman/aliyun-dockerfile-image</code></li>
+<li>拉取镜像 <code>docker pull registry.cn-hangzhou.aliyuncs.com/crazyman/aliyun-dockerfile-image</code></li>
+</ul>
+<h5 id="使用Docker-Harbor搭建私库"><a href="#使用Docker-Harbor搭建私库" class="headerlink" title="使用Docker Harbor搭建私库"></a>使用Docker Harbor搭建私库</h5><ul>
+<li> <a target="_blank" rel="noopener" href="https://github.com/goharbor/harbor">https://github.com/goharbor/harbor</a> </li>
+<li> 下载版本<a target="_blank" rel="noopener" href="https://github.com/goharbor/harbor/releases">https://github.com/goharbor/harbor/releases</a> ，例如1.7.1</li>
+<li> 将安装包上传至安装了docker-compose的机器，解压<code>tar -zxvf  harbor-offline-installer-v1.7.1.tgz</code></li>
+<li> 进入 harbor目录，修改harbor.cfg，将hostname修改为指定域名或本机ip</li>
+<li> 安装harbor <code>sh install.sh</code></li>
+<li> 浏览器访问<a target="_blank" rel="noopener" href="http://172.96.243.172/">http://172.96.243.172/</a> ，输入用户名密码即可</li>
+<li> 重命名镜像 <code>docker tag chenpenghui93/dockerfile-image 172.96.243.172/library/harbor-image</code></li>
+<li> 推送镜像 <code>docker push 172.96.243.172/library/harbor-image</code></li>
+<li> 拉取镜像 <code>docker pull 172.96.243.172/library/harbor-image</code></li>
+</ul>
+<h3 id="容器（Container）"><a href="#容器（Container）" class="headerlink" title="容器（Container）"></a>容器（Container）</h3><h4 id="定义-1"><a href="#定义-1" class="headerlink" title="定义"></a>定义</h4><ul>
+<li>运行着的镜像实例</li>
+<li>理解：container只是基于image(只读)之后的一个layer(读写)</li>
+</ul>
+<h4 id="由Container生成Image"><a href="#由Container生成Image" class="headerlink" title="由Container生成Image"></a>由Container生成Image</h4><ol>
+<li><p>拉取centos镜像  <code>docker pull centos</code>  </p>
+</li>
+<li><p>根据centos镜像创建container实例  <code>docker run -d -it --name my-centos centos</code>  </p>
+</li>
+<li><p>进入my-centos容器中  <code>docker exec -it my-centos bash</code>  </p>
+</li>
+<li><p>输入vim命令提示  bash: vim: command not found  </p>
+</li>
+<li><p>修改container，安装vim，生成新的centos</p>
+</li>
+<li><p>在container中安装vim   <code>yum install -y vim</code>  </p>
+</li>
+<li><p>退出容器，生成新的centos   <code>docker commit my-centos vim-centos-image</code>  </p>
+</li>
+<li><p>基于“vim-centos-image”生成新的容器   <code>docker run -d -it --name my-vim-centos vim-centos-image</code>  </p>
+</li>
+<li><p>进入my-vim-centos中检查vim命令是否可用 </p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">docker exec -it my-vim-centos bash</span><br><span class="line">vim</span><br></pre></td></tr></table></figure>
+
+<p>结论：docker commit命令可基于一个container重新生成一个Image。不建议这么做，排查问题时无法确认Image的生成步骤。</p>
+</li>
+</ol>
+<h4 id="管控Container占用资源"><a href="#管控Container占用资源" class="headerlink" title="管控Container占用资源"></a>管控Container占用资源</h4><p>不对Container的资源做限制时，会无限使用物理机的资源。查看资源使用情况 <code>docker stats</code></p>
+<h5 id="使用参数-memory限制最大使用内存"><a href="#使用参数-memory限制最大使用内存" class="headerlink" title="使用参数--memory限制最大使用内存"></a>使用参数<code>--memory</code>限制最大使用内存</h5><p> <code>docker run -d --memory 100M --name tomcat1 tomcat</code>  </p>
+<h5 id="使用参数-cpu-shares设置使用CPU的权重"><a href="#使用参数-cpu-shares设置使用CPU的权重" class="headerlink" title="使用参数--cpu-shares设置使用CPU的权重"></a>使用参数<code>--cpu-shares</code>设置使用CPU的权重</h5><p>CPU资源充足时，设置CPU权重是没有意义的。只有在容器争用CPU资源的情况下，CPU的权重才能让不同的容器分到不同的CPU用量。–cpu-shares选项用来设置CPU权重，默认值为1024。</p>
+<p><code>docker run -d --cpu-shares 10 --name tomcat2 tomcat</code>  </p>
+<h5 id="图形化工具监控"><a href="#图形化工具监控" class="headerlink" title="图形化工具监控"></a>图形化工具监控</h5><ul>
+<li><p><a target="_blank" rel="noopener" href="https://github.com/weaveworks/scope">https://github.com/weaveworks/scope</a>  </p>
+</li>
+<li><p>安装使用</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sudo curl -L git.io&#x2F;scope -o &#x2F;usr&#x2F;local&#x2F;bin&#x2F;scope</span><br><span class="line">sudo chmod a+x &#x2F;usr&#x2F;local&#x2F;bin&#x2F;scope</span><br><span class="line">scope launch 172.96.243.172</span><br></pre></td></tr></table></figure></li>
+<li><p>浏览器访问  <a target="_blank" rel="noopener" href="http://172.96.243.172:4040/">http://172.96.243.172:4040/</a> </p>
+</li>
+<li><p>停止scope时执行 <code>scope stop</code></p>
+</li>
+<li><p>同时监控两台机器，在两台机器中分别执行<code>scope launch ip1 ip2</code>  </p>
+</li>
+</ul>
+<h3 id="底层技术"><a href="#底层技术" class="headerlink" title="底层技术"></a>底层技术</h3><ul>
+<li>container是一种轻量级的虚拟化技术，不用模拟硬件创建虚拟机</li>
+<li>Docker是基于Linux Kernel的Namespace、CGroups、UnionFileSystem等技术封装成的一种自定义容器格式，从而提供虚拟运行环境<ul>
+<li>Namespace：用来做隔离，例如，pid、net、mnt</li>
+<li>CGroups：controller groups用来做资源限制，例如，内存、cpu</li>
+<li>Union file system：用来做image和container分层</li>
+</ul>
+</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://moshi.site/2019/11/03/Docker%E5%9F%BA%E7%A1%80(%E4%BA%8C)%E2%80%94%E2%80%94%E9%95%9C%E5%83%8F%E3%80%81%E5%AE%B9%E5%99%A8/" data-id="ckmreatvs001myosocbn6ha24" class="article-share-link">Share</a>
+      
+	  
+        <a href="/2019/11/03/Docker%E5%9F%BA%E7%A1%80(%E4%BA%8C)%E2%80%94%E2%80%94%E9%95%9C%E5%83%8F%E3%80%81%E5%AE%B9%E5%99%A8/#comments" class="article-comment-link">
+          <span class="post-comments-count valine-comment-count" data-xid="/2019/11/03/Docker%E5%9F%BA%E7%A1%80(%E4%BA%8C)%E2%80%94%E2%80%94%E9%95%9C%E5%83%8F%E3%80%81%E5%AE%B9%E5%99%A8/" itemprop="commentCount"></span>
+          留言
+        </a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Docker/" rel="tag">Docker</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+    <a href="/2019/11/05/Docker%E5%9F%BA%E7%A1%80(%E4%B8%89)%E2%80%94%E2%80%94%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/" id="article-nav-newer" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Newer</strong>
+      <div class="article-nav-title">
+        
+          Docker基础(三)——网络通信
+        
+      </div>
+    </a>
+  
+  
+    <a href="/2019/11/01/Docker%E5%9F%BA%E7%A1%80(%E4%B8%80)%E2%80%94%E2%80%94%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA%E5%8F%8A%E5%B8%B8%E7%94%A8%E5%91%BD%E4%BB%A4/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">Docker基础(一)——环境搭建及常用命令</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+  <section id="comments" class="vcomment">
+  </section>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/">Java Web</a><span class="category-list-count">3</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Quartz/">Quartz</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Redis/">Redis</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Spring/">Spring</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-%E5%9F%BA%E7%A1%80/">Java 基础</a><span class="category-list-count">12</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-%E5%9F%BA%E7%A1%80/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a><span class="category-list-count">12</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/">容器云</a><span class="category-list-count">8</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/Docker/">Docker</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/K8s/">K8s</a><span class="category-list-count">3</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/">工作总结</a><span class="category-list-count">6</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/%E6%96%B9%E6%B3%95/">方法</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/%E8%A7%84%E8%8C%83/">规范</a><span class="category-list-count">3</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E7%A8%8B%E5%8C%96/">工程化</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E7%A8%8B%E5%8C%96/Git/">Git</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">微服务</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/JHipster/">JHipster</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E7%B4%A2%E5%BC%95/">索引</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9A%8F%E7%AC%94%E6%9D%82%E8%AE%B0/">随笔杂记</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9A%8F%E7%AC%94%E6%9D%82%E8%AE%B0/%E8%AF%BB%E4%B9%A6/">读书</a><span class="category-list-count">1</span></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Docker/" style="font-size: 16.67px;">Docker</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/JHipster/" style="font-size: 10px;">JHipster</a> <a href="/tags/K8s/" style="font-size: 13.33px;">K8s</a> <a href="/tags/Quartz/" style="font-size: 10px;">Quartz</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/%E5%B8%B8%E7%94%A8%E6%9C%AF%E8%AF%AD/" style="font-size: 10px;">常用术语</a> <a href="/tags/%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98/" style="font-size: 10px;">排查问题</a> <a href="/tags/%E6%90%9C%E7%B4%A2%E6%8A%80%E5%B7%A7/" style="font-size: 10px;">搜索技巧</a> <a href="/tags/%E6%96%87%E6%A1%A3%E8%A7%84%E8%8C%83/" style="font-size: 10px;">文档规范</a> <a href="/tags/%E7%89%88%E6%9C%AC%E5%91%BD%E5%90%8D/" style="font-size: 10px;">版本命名</a> <a href="/tags/%E7%B4%A2%E5%BC%95/" style="font-size: 10px;">索引</a> <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" style="font-size: 20px;">设计模式</a> <a href="/tags/%E8%AF%BB%E4%B9%A6%E6%96%B9%E6%B3%95/" style="font-size: 10px;">读书方法</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/04/25/Redis%E5%9F%BA%E7%A1%80%E7%AF%87/">Redis基础篇</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/12/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%E7%BC%96%E5%86%99%E8%A7%84%E8%8C%83/">技术文档编写规范</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/23/K8s%E5%9F%BA%E7%A1%80(%E4%B8%89)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3%E5%8F%8A%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/">K8s基础(三)——组件详解及网络通信</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/17/K8s%E5%9F%BA%E7%A1%80(%E4%BA%8C)%E2%80%94%E2%80%94%E6%90%AD%E5%BB%BAK8s%E9%9B%86%E7%BE%A4/">K8s基础(二)——搭建K8s集群</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/13/K8s%E5%9F%BA%E7%A1%80(%E4%B8%80)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E7%AE%80%E4%BB%8B/">K8s基础(一)——组件简介</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2021 莫逝<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">首页</a>
+  
+    <a href="/archives" class="mobile-nav-link">归档</a>
+  
+    <a href="/about" class="mobile-nav-link">关于我</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  
+<script src="https://unpkg.com/valine@latest/dist/Valine.min.js"></script>
+
+<script>
+    var GUEST_INFO = ['nick','mail','link'];
+    var guest_info = 'nick,mail,link'.split(',').filter(function(item){
+        return GUEST_INFO.indexOf(item) > -1
+    });
+    var notify = 'true' == true;
+    var verify = 'true' == true;
+    new Valine({
+        el: '.vcomment',
+        notify: notify,
+        verify: verify,
+        appId: "Bq4tWlGoDjJFOFoLkmRUSsQt-gzGzoHsz",
+        appKey: "t63uIiBLF5M4zBj6BYPa3uPC",
+        placeholder: "Just go go",
+        pageSize:'10',
+        avatar:'mm',
+        lang:'zh-cn'
+    });
+</script>
+
+  </div>
+</body>
+</html>

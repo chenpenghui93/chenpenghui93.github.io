@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  
+
+  
+  <title>Redis基础篇 | 莫逝的博客</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+  <meta name="description" content="工作中有些场景用到了Redis，需要了解一下，本文作为学习笔记，以备后查。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Redis基础篇">
+<meta property="og:url" content="https://moshi.site/2020/04/25/Redis%E5%9F%BA%E7%A1%80%E7%AF%87/index.html">
+<meta property="og:site_name" content="莫逝的博客">
+<meta property="og:description" content="工作中有些场景用到了Redis，需要了解一下，本文作为学习笔记，以备后查。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2020-04-25T10:15:37.000Z">
+<meta property="article:modified_time" content="2021-01-25T09:57:56.352Z">
+<meta property="article:author" content="莫逝">
+<meta property="article:tag" content="Redis">
+<meta name="twitter:card" content="summary">
+  
+    <link rel="alternate" href="/atom.xml" title="莫逝的博客" type="application/atom+xml">
+  
+  
+    <link rel="icon" href="/favicon.png">
+  
+  
+    <link href="//fonts.googleapis.com/css?family=Source+Code+Pro" rel="stylesheet" type="text/css">
+  
+  
+<link rel="stylesheet" href="/css/style.css">
+
+<meta name="generator" content="Hexo 5.4.0"></head>
+
+<body>
+  <div id="container">
+    <div id="wrap">
+      <header id="header">
+  <div id="banner"></div>
+  <div id="header-outer" class="outer">
+    <div id="header-title" class="inner">
+      <h1 id="logo-wrap">
+        <a href="/" id="logo">莫逝的博客</a>
+      </h1>
+      
+    </div>
+    <div id="header-inner" class="inner">
+      <nav id="main-nav">
+        <a id="main-nav-toggle" class="nav-icon"></a>
+        
+          <a class="main-nav-link" href="/">首页</a>
+        
+          <a class="main-nav-link" href="/archives">归档</a>
+        
+          <a class="main-nav-link" href="/about">关于我</a>
+        
+      </nav>
+      <nav id="sub-nav">
+        
+          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
+        
+        <a id="nav-search-btn" class="nav-icon" title="搜索"></a>
+      </nav>
+      <div id="search-form-wrap">
+        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="https://moshi.site"></form>
+      </div>
+    </div>
+  </div>
+</header>
+      <div class="outer">
+        <section id="main"><article id="post-Redis基础篇" class="article article-type-post" itemscope itemprop="blogPost">
+  <div class="article-meta">
+    <a href="/2020/04/25/Redis%E5%9F%BA%E7%A1%80%E7%AF%87/" class="article-date">
+  <time datetime="2020-04-25T10:15:37.000Z" itemprop="datePublished">2020-04-25</time>
+</a>
+    
+  <div class="article-category">
+    <a class="article-category-link" href="/categories/Java-Web/">Java Web</a>►<a class="article-category-link" href="/categories/Java-Web/Redis/">Redis</a>
+  </div>
+
+  </div>
+  <div class="article-inner">
+    
+    
+      <header class="article-header">
+        
+  
+    <h1 class="article-title" itemprop="name">
+      Redis基础篇
+    </h1>
+  
+
+      </header>
+    
+    <div class="article-entry" itemprop="articleBody">
+      
+        <p>工作中有些场景用到了Redis，需要了解一下，本文作为学习笔记，以备后查。</p>
+<span id="more"></span>
+
+<h3 id="1-诞生历程"><a href="#1-诞生历程" class="headerlink" title="1. 诞生历程"></a>1. 诞生历程</h3><p>2008年的时候Antirez创建了一个访客信息网站lloogg.com——同类产品有CNZZ、百度统计、Google Analytics等——可以查看最多10000条最新浏览记录。最初实现的时候是为每一个网站创建一个列表(list)，不同网站的访问记录进入到不同的列表。如果列表长度超过了用户指定的长度，它需要把最早的记录删除(先进先出)。</p>
+<p>当lloogg.com的用户越来越多的时候，它需要维护的列表数量也越来越多，这种记录最新请求和删除最早请求的操作也越来越多；它最初使用的数据库是MySQL，每一次记录和删除都要读写磁盘，因为数据量和并发量太大，在这种情况下无论怎么去优化数据库都不管用了。</p>
+<p>考虑到最终限制数据库性能的瓶颈在于磁盘，所以Antirez打算放弃磁盘，自己去实现一个具有列表结构的数据库原型，把数据放在内存而不是磁盘，这样可以大幅提升列表的push和pop的效率。Antirez发现这种思路确实可以解决这个问题后，用C语言重写了这个内存数据库，并加上了持久化功能。于是，2009年Redis横空出世，从最开始只支持列表的数据库，到现在支持多种数据类型，并且提供了一系列高级特性。</p>
+<p>Redis的全称是REmote DIctionary Service。从其诞生历史可以看到，在某些场景中，关系型数据库并不适合用来存储Web应用的数据。那么，关系型数据库和非关系型数据库(或者说SQL和NoSQL)有哪些区别？</p>
+<h3 id="2-定位与基本特性"><a href="#2-定位与基本特性" class="headerlink" title="2. 定位与基本特性"></a>2. 定位与基本特性</h3><h4 id="2-1-SQL与NoSQL"><a href="#2-1-SQL与NoSQL" class="headerlink" title="2.1 SQL与NoSQL"></a>2.1 SQL与NoSQL</h4><p>一般Web项目中会首先考虑使用关系型数据库来存储业务数据，例如Oracle、MySQL、SQLServer等。关系型数据库的特点：</p>
+<ul>
+<li>以表格的形式，基于行存储数据，二维模式</li>
+<li>存储的是结构化的数据，数据存储有固定的模式(schema)，数据需要适应表结构</li>
+<li>表与表之间存在关联</li>
+<li>大部分关系型数据库都支持SQL操作，支持复杂的关联查询</li>
+<li>通过支持事务(ACID)来提供严格或实时的数据一致性<ul>
+<li>Atomicity，原子性</li>
+<li>Consistency，一致性</li>
+<li>Isolation，隔离性</li>
+<li>Durability，持久性</li>
+</ul>
+</li>
+</ul>
+<p>但使用关系型数据库也存在一些限制，比如：</p>
+<ul>
+<li>要想实现扩容的话，只能垂直扩展，例如，如果磁盘限制了数据的存储，就要通过堆硬件的方式扩大磁盘容量，不支持动态的扩缩容；水平扩容需要复杂的技术来实现(分库分表)</li>
+<li>表结构修改困难，因此存储的数据格式也受到限制</li>
+<li>在高并发和大数据量的情况下，关系型数据库通常会把数据持久化到磁盘，基于磁盘的读写压力较大</li>
+</ul>
+<p>为了规避关系型数据库的一系列问题，就产生了非关系型数据库，一般称为”non-relational”或者”Not Only SQL”。NoSQL最开始的含义是不提供SQL的数据库。非关系型数据库的特点：</p>
+<ul>
+<li>存储非结构化的数据，比如文本、图片、音频、视频等</li>
+<li>标语表之间没有关联，可扩展性强</li>
+<li>保证数据的最终一致性，遵循BASE<ul>
+<li>Basically Available，基本可用</li>
+<li>Soft-state，软状态</li>
+<li>Eventually Consistent，最终一致性</li>
+</ul>
+</li>
+<li>支持海量数据的存储和高并发的高效读写</li>
+<li>支持分布式，能够对数据进行分片存储，扩缩容简单</li>
+</ul>
+<p>对于不同的存储类型，有各种各样的非关系型数据库，常见的几种类型有：</p>
+<ul>
+<li>KV存储，常见的有Redis、MemcacheDB</li>
+<li>文档存储，MongoDB</li>
+<li>列存储，HBase</li>
+<li>图(Graph)存储，Neo4j</li>
+<li>对象存储</li>
+<li>XML存储</li>
+<li>……</li>
+</ul>
+<p>详见<a target="_blank" rel="noopener" href="https://hostingdata.co.uk/nosql-database/">https://hostingdata.co.uk/nosql-database/</a>，这个网站上列举了各种NoSQL数据库。</p>
+<h4 id="2-2Redis特性"><a href="#2-2Redis特性" class="headerlink" title="2.2Redis特性"></a>2.2Redis特性</h4><p>官网介绍：<a target="_blank" rel="noopener" href="https://redis.io/topics/introduction%E3%80%81http://www.redis.cn/">https://redis.io/topics/introduction、http://www.redis.cn/</a></p>
+<p>硬件层面有CPU缓存，浏览器也有缓存，手机应用也有缓存等等，将数据缓存起来的原因就是从原始位置获取数据的代价太大了。将常用的数据放到一个临时位置存储起来，取回就更快一些。</p>
+<p>Redis的特性：</p>
+<ol>
+<li>更丰富的数据类型</li>
+<li>进程内与跨进程；单机与分布式</li>
+<li>功能丰富：持久化机制、过期策略</li>
+<li>支持多种编程语言</li>
+<li>高可用集群</li>
+</ol>
+<h3 id="3-安装与基本操作"><a href="#3-安装与基本操作" class="headerlink" title="3. 安装与基本操作"></a>3. 安装与基本操作</h3><h4 id="3-1-安装"><a href="#3-1-安装" class="headerlink" title="3.1 安装"></a>3.1 安装</h4><ul>
+<li><p>CentOS7安装Redis单实例</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">1.下载、安装到目录/usr/<span class="built_in">local</span>/soft/</span></span><br><span class="line">cd /usr/local/soft/</span><br><span class="line">wget http://download.redis.io/releases/redis-5.0.5.tar.gz</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">2.解压</span></span><br><span class="line">tar -zxvf redis-5.0.5.tar.gz</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">3.安装gcc依赖(Redis是C语言编写的，编译时需要此依赖)</span></span><br><span class="line">yum install gcc</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">4.编译安装</span></span><br><span class="line">cd redis-5.0.5</span><br><span class="line">make MALLOC=libc</span><br><span class="line"><span class="meta">#</span><span class="bash">将/usr/<span class="built_in">local</span>/soft/redis-5.0.5/src目录下二进制文件安装到/usr/<span class="built_in">local</span>/bin</span></span><br><span class="line">cd src</span><br><span class="line">make install</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">5.修改配置文件(默认配置文件/usr/<span class="built_in">local</span>/soft/redis-5.0.5/redis.conf)</span></span><br><span class="line">daemonize yes #后台启动</span><br><span class="line">bind 0.0.0.0 #非本机也能访问</span><br><span class="line">requirepass yourpassword #访问密码</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">6.使用指定配置文件启动Redis</span></span><br><span class="line">/usr/local/soft/redis-5.0.5/src/redis-server /usr/local/soft/redis-5.0.5/redis.conf</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">7.进入客户端</span></span><br><span class="line">/usr/local/soft/redis-5.0.5/src/redis-cli</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">8.1 停止Redis(客户端中执行)</span></span><br><span class="line"><span class="meta">redis&gt;</span><span class="bash"> shutdown</span></span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">8.2 停止Redis</span></span><br><span class="line">ps -aux | grep redis</span><br><span class="line">kill -9 xxxx</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">9.远程连接</span></span><br><span class="line">redis-cli -h [host] -p [port] -a [password]</span><br></pre></td></tr></table></figure></li>
+<li><p>CentOS7中使用Docker安装Redis</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">1.获取最新镜像</span></span><br><span class="line">docker pull redis</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">2.查看已下载的镜像</span></span><br><span class="line">docker images</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">3.因为Docker安装的Redis默认没有配置文件，所以需要挂载主机的配置文件</span></span><br><span class="line">mkdir -p /usr/local/soft/redis/conf/</span><br><span class="line">mkdir -p /usr/local/soft/redis/data/</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">4.复制redis.conf文件到主机/usr/<span class="built_in">local</span>/soft/redis/conf/目录下，并修改配置文件</span></span><br><span class="line">daemonize yes #必须注释此行！否则容器无法启动！！！</span><br><span class="line">bind 0.0.0.0 #非本机也能访问</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">5.运行Redis服务端</span></span><br><span class="line">docker run -d --name redis -p 6379:6379 -v /usr/local/soft/redis/conf/redis.conf:/etc/redis/redis.conf -v /usr/local/soft/redis/data/:/data redis:latest redis-server /etc/redis/redis.conf --appendonly yes --requirepass &quot;yourpassword&quot;</span><br><span class="line"></span><br><span class="line"><span class="meta">#</span><span class="bash">6.本地连接(远程连接同上)</span></span><br><span class="line">docker exec -it redis redis-cli -a [yourpassword]</span><br></pre></td></tr></table></figure></li>
+<li><p>参数配置方式</p>
+<ul>
+<li>redis.conf</li>
+<li>设置启动参数</li>
+<li>config set</li>
+</ul>
+</li>
+</ul>
+<h4 id="3-2-基本操作"><a href="#3-2-基本操作" class="headerlink" title="3.2 基本操作"></a>3.2 基本操作</h4><p>Redis默认有16个库(0-15)，可以在配置文件中修改，默认使用第一个db0，这些库没有完全隔离，不适合把不同的库分配给不同的业务使用。它使用字典结构的存储方式，采用key-value存储，key和value的<a target="_blank" rel="noopener" href="https://redis.io/topics/data-types-intro/">最大长度限制是512M</a>。命令参考：<a target="_blank" rel="noopener" href="http://redisdoc.com/index.html">http://redisdoc.com/index.html</a></p>
+<table>
+<thead>
+<tr>
+<th>命令</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>config get databases</td>
+<td>查看数据库个数</td>
+</tr>
+<tr>
+<td>select 0</td>
+<td>切换数据库</td>
+</tr>
+<tr>
+<td>flushdb</td>
+<td>清空当前数据库</td>
+</tr>
+<tr>
+<td>flushall</td>
+<td>清空所有数据库</td>
+</tr>
+<tr>
+<td>set [key] [value]</td>
+<td>存值</td>
+</tr>
+<tr>
+<td>get [key]</td>
+<td>取值</td>
+</tr>
+<tr>
+<td>keys *</td>
+<td>查看所有键</td>
+</tr>
+<tr>
+<td>dbsize</td>
+<td>获取键总数</td>
+</tr>
+<tr>
+<td>exists [key]</td>
+<td>查看键是否存在</td>
+</tr>
+<tr>
+<td>del [key] [value]</td>
+<td>删除键</td>
+</tr>
+<tr>
+<td>rename [key] [value]</td>
+<td>重命名键</td>
+</tr>
+<tr>
+<td>type [key]</td>
+<td>查看类型</td>
+</tr>
+</tbody></table>
+<h3 id="4-基本数据类型"><a href="#4-基本数据类型" class="headerlink" title="4. 基本数据类型"></a>4. 基本数据类型</h3><p>Redis的基本数据类型包含8种：String、Hash、List、Set、ZSet、BitMaps、Hyperloglogs、Streams。</p>
+<h4 id="4-1-String-字符串"><a href="#4-1-String-字符串" class="headerlink" title="4.1 String 字符串"></a>4.1 String 字符串</h4><h5 id="存储类型"><a href="#存储类型" class="headerlink" title="存储类型"></a>存储类型</h5><p>最基本也是最常用的数据类型就是String，可以用来存储字符串、整数、浮点数</p>
+<h5 id="操作命令"><a href="#操作命令" class="headerlink" title="操作命令"></a>操作命令</h5><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>mset name zhangsan sex male</td>
+<td>设置多个值(批量操作，原子性)</td>
+</tr>
+<tr>
+<td>setnx name zhangsan</td>
+<td>设置值，如果key存在则不成功<br/>基于此可实现分布式锁，用del key释放锁</td>
+</tr>
+<tr>
+<td>set key value [expiration EX seconds&vert;PX milliseconds][NX&vert;XX]</td>
+<td>多参数设置过期时间</td>
+</tr>
+<tr>
+<td>incr count<br>incrby count100</td>
+<td>整数值递增</td>
+</tr>
+<tr>
+<td>decrcount<br/>decrbycount100</td>
+<td>整数值递减</td>
+</tr>
+<tr>
+<td>set f 3.3<br>incrbyfloat 6.6</td>
+<td>浮点数增量</td>
+</tr>
+<tr>
+<td>mget name sex</td>
+<td>获取多个值</td>
+</tr>
+<tr>
+<td>strlen name</td>
+<td>获取长度</td>
+</tr>
+<tr>
+<td>append name lisi</td>
+<td>字符串追加内容</td>
+</tr>
+<tr>
+<td>getrange f 0 10</td>
+<td>获取指定范围的字符</td>
+</tr>
+</tbody></table>
+<h5 id="存储-实现-原理"><a href="#存储-实现-原理" class="headerlink" title="存储(实现)原理"></a>存储(实现)原理</h5><p>因为Redis是KV数据库，它是通过hashtable实现的，所以每个键值对都会有一个dictEntry(源码dict.h)，里面定义了分别定义了指向key、value、下一个dictEntry的指针。key是字符串，但是Redis没有直接使用C语言的字符数组，而是存储在自定义的SDS中；value既不是直接作为字符串存储，也不是直接存储在SDS中，而是存储在redisObject中。实际上5种常用的数据类型的任何一种，都是通过redisObject来存储的。</p>
+<p>字符串类型的内部编码有3种：</p>
+<ol>
+<li>int，存储8个字节的长整型(long, 2^63-1)</li>
+<li>embstr，代表embstr格式的SDS(Simple Dynamic String)，存储小于44个字节的字符串</li>
+<li>raw，存储大于44个字节的字符串</li>
+</ol>
+<h5 id="应用场景"><a href="#应用场景" class="headerlink" title="应用场景"></a>应用场景</h5><ul>
+<li>缓存。String类型，热点数据缓存、对象缓存、全页缓存等，可以提升热点数据的访问速度</li>
+<li>分布式数据共享。String类型，Redis是分布式的独立服务，可以在多个应用之间共享，例如分布式session(spring-session-data-redis)</li>
+<li>分布式锁。String类型的setnx方法，只有不存在时才能添加成功，返回true</li>
+<li>全局ID。int类型，incrby方法，利用原子性</li>
+<li>计数器。int类型，incr方法；文章阅读量，点赞数，允许一定的延迟，先写入redis再定时同步到数据库</li>
+<li>限流。int类型，incr方法，以访问者ip等信息作为key，访问一次增加一次计数，超过次数则返回false</li>
+<li>位统计。String类型的BITCOUNT，bit非常节省空间(1MB=8388608bit)，可以用来做大数据量的统计，例如在线用户统计、留存用户统计。</li>
+</ul>
+<p>如果一个对象的value有多个值的时候，存储时如果用序列化(JSON/Prorobuf/XML)会增加序列化和反序列化的开销，并且不能单独获取、修改一个值；此时可以通过key分层的方式来实现存储</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">利用key分层来存储一个key对应的多个value</span></span><br><span class="line">mset student:1:sno 001 student:1:sname zhangsan student:1:sex male</span><br><span class="line"><span class="meta">#</span><span class="bash">一次获取多个值</span></span><br><span class="line">mget student:1:sno student:1:sname student:1:sex</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-2-Hash-哈希"><a href="#4-2-Hash-哈希" class="headerlink" title="4.2 Hash 哈希"></a>4.2 Hash 哈希</h4><h5 id="存储类型-1"><a href="#存储类型-1" class="headerlink" title="存储类型"></a>存储类型</h5><p>包含键值对的无序散列表，value只能是字符串，不能嵌套其它类型。</p>
+<p>同样是存储字符串，Hash与String的主要区别：</p>
+<ol>
+<li>把所有相关的值聚集到一个key中，节省内存空间</li>
+<li>只使用一个key，减少key冲突</li>
+<li>当需要批量获取值的时候，只需要使用一个命令，减少内存/IO/CPU的消耗</li>
+</ol>
+<p>Hash不适用的场景：</p>
+<ol>
+<li>Field不能单独设置过期时间</li>
+<li>没有bit操作</li>
+<li>需要考虑数据量分布的问题(value值非常大的时候，无法分布到多个节点)</li>
+</ol>
+<h5 id="操作命令-1"><a href="#操作命令-1" class="headerlink" title="操作命令"></a>操作命令</h5><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>hset h1 e 5</td>
+<td>设置值</td>
+</tr>
+<tr>
+<td>hmset h1 a 1 b 2 c 3 d 4</td>
+<td>批量设置值</td>
+</tr>
+<tr>
+<td>hget h1 a</td>
+<td>获取单个值</td>
+</tr>
+<tr>
+<td>hmget h1 a b c d</td>
+<td>批量获取值</td>
+</tr>
+<tr>
+<td>hkeys h1</td>
+<td>获取所有键</td>
+</tr>
+<tr>
+<td>hvals h1</td>
+<td>获取键对应的所有值</td>
+</tr>
+<tr>
+<td>hgetall h1</td>
+<td>获取所有键、值</td>
+</tr>
+<tr>
+<td>hexists h1 a</td>
+<td>存在则返回1，否则返回0</td>
+</tr>
+<tr>
+<td>hlen h1</td>
+<td>获取长度</td>
+</tr>
+<tr>
+<td>hdel h1</td>
+<td>删除键、值</td>
+</tr>
+</tbody></table>
+<h5 id="存储-实现-原理-1"><a href="#存储-实现-原理-1" class="headerlink" title="存储(实现)原理"></a>存储(实现)原理</h5><p>Redis的Hash本身也是一个KV结构，类似于Java中的HashMap。外层的哈希(Redis KV的实现)只用到了hashtable。当存储hash数据类型时，将其称为内层的哈希。内层的哈希底层可以使用两种数据结构实现：</p>
+<ul>
+<li>ziplist：OBJ_ENCODING_ZIPLIST（压缩列表）</li>
+<li>hashtable：OBJ_ENCODING_HT（哈希表）</li>
+</ul>
+<p>ziplist 是一个经过特殊编码的双向链表，它不存储指向上一个链表节点和指向下一 个链表节点的指针，而是存储上一个节点长度和当前节点长度，通过牺牲部分读写性能，来换取高效的内存空间利用率，是一种时间换空间的思想。只用在字段个数少，字段值小的场景里面。</p>
+<p>当hash对象同时满足以下两个条件的时候，使用ziplist编码：</p>
+<ol>
+<li>所有的键值对的健和值的字符串长度都小于等于 64byte（一个英文字母 一个字节）</li>
+<li>哈希对象保存的键值对数量小于 512 个</li>
+</ol>
+<p>一个哈希对象超过配置的阈值（键和值的长度有&gt;64byte，键值对个数&gt;512 个）时， 会转换成哈希表（hashtable）。</p>
+<p>在 Redis 中，hashtable被称为字典（dictionary），它是一个数组+链表的结构。Redis 的 KV 结构是通过一个 dictEntry 来实现的，它又对 dictEntry 进行了多层的封装，从最底层到最高层 dictEntry——dictht——dict——OBJ_ENCODING_HT。</p>
+<p>为什么要定义两个哈希表？redis 的 hash 默认使用的是 ht[0]，ht[1]不会初始化和分配空间。哈希表 dictht 是用链地址法来解决碰撞问题的。在这种情况下，哈希表的性能取决 于它的大小（size 属性）和它所保存的节点的数量（used 属性）之间的比率：</p>
+<ul>
+<li>比率在 1:1 时（一个哈希表 ht 只存储一个节点 entry），哈希表的性能最好</li>
+<li>如果节点数量比哈希表的大小要大很多的话（这个比例用 ratio 表示，5表示平均一个 ht 存储 5 个 entry），那么哈希表就会退化成多个链表，哈希表本身的性能优势就不再存在</li>
+</ul>
+<p>第二种情况下需要扩容，Redis里面的这种操作叫做rehash，步骤如下：</p>
+<ol>
+<li>为字符 ht[1]哈希表分配空间，这个哈希表的空间大小取决于要执行的操作，以 及 ht[0]当前包含的键值对的数量(ht[1]的大小为第一个大于等于 ht[0].used*2)</li>
+<li>将所有的 ht[0]上的节点 rehash 到 ht[1]上，重新计算 hash 值和索引，然后放 入指定的位置</li>
+<li>当 ht[0]全部迁移到了 ht[1]之后，释放 ht[0]的空间，将 ht[1]设置为 ht[0]表， 并创建新的 ht[1]，为下次 rehash 做准备</li>
+</ol>
+<p>当dict_can_resize 为1并且已使用节点数和字典大小之间的比率(dict_force_resize_ratio)超过 1：5时，触发扩容。</p>
+<h5 id="应用场景-1"><a href="#应用场景-1" class="headerlink" title="应用场景"></a>应用场景</h5><ul>
+<li>String可以做的事情，Hash都可以做</li>
+<li>存储对象类型的数据。比如对象或一张表的数据，比String节省了更多key的空间，也便于集中管理</li>
+<li>购物车。key:用户id; field:商品id; value:商品数量。数量加减:hincrby, 删除:hdel, 全选:hgetall, 商品数:hlen</li>
+</ul>
+<h4 id="4-3-List-列表"><a href="#4-3-List-列表" class="headerlink" title="4.3 List 列表"></a>4.3 List 列表</h4><h5 id="存储类型-2"><a href="#存储类型-2" class="headerlink" title="存储类型"></a>存储类型</h5><p>存储有序的字符串(从左至右)，元素可以重复，可以充当队列和栈的角色</p>
+<h5 id="操作命令-2"><a href="#操作命令-2" class="headerlink" title="操作命令"></a>操作命令</h5><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>lpush [key] [value]</td>
+<td>向列表左侧增加元素</td>
+</tr>
+<tr>
+<td>lpush [key] [value] [value]</td>
+<td>向列表左侧增加多个元素</td>
+</tr>
+<tr>
+<td>rpush [key] [value]</td>
+<td>向列表右侧增加元素</td>
+</tr>
+<tr>
+<td>lpop [key]</td>
+<td>从列表左侧取出元素</td>
+</tr>
+<tr>
+<td>rpop [key]</td>
+<td>从列表右侧取出元素</td>
+</tr>
+<tr>
+<td>blpop [key]</td>
+<td>当给定列表内没有任何元素可供弹出时，连接将被命令阻塞，直到等待超时或发现可弹出元素为止</td>
+</tr>
+<tr>
+<td>lindex [key] 0</td>
+<td>取出列表左侧第一个元素</td>
+</tr>
+<tr>
+<td>lindex [key] 0 -1</td>
+<td>从左至右取出列表所有元素</td>
+</tr>
+</tbody></table>
+<h5 id="存储-实现-原理-2"><a href="#存储-实现-原理-2" class="headerlink" title="存储(实现)原理"></a>存储(实现)原理</h5><p>在早期的版本中，数据量较小时用 ziplist 存储，达到临界值时转换为 linkedlist 进 行存储，分别对应 OBJ_ENCODING_ZIPLIST 和 OBJ_ENCODING_LINKEDLIST；3.2 版本之后，统一用 quicklist 来存储。quicklist 存储了一个双向链表，每个节点 都是一个 ziplist。quicklist（快速列表）是 ziplist 和 linkedlist 的结合体。</p>
+<h5 id="应用场景-2"><a href="#应用场景-2" class="headerlink" title="应用场景"></a>应用场景</h5><ul>
+<li>用户消息时间线。利用list的有序性</li>
+<li>消息队列。List 提供了两个阻塞的弹出操作：BLPOP/BRPOP，可以设置超时时间：<ul>
+<li>BLPOP：BLPOP [key] timeout 移出并获取列表的第一个元素， 如果列表没有元素 会阻塞列表直到等待超时或发现可弹出元素为止</li>
+<li>BRPOP：BRPOP [key] timeout 移出并获取列表的最后一个元素， 如果列表没有元 素会阻塞列表直到等待超时或发现可弹出元素为止</li>
+</ul>
+</li>
+</ul>
+<h4 id="4-4-Set-集合"><a href="#4-4-Set-集合" class="headerlink" title="4.4 Set 集合"></a>4.4 Set 集合</h4><h5 id="存储类型-3"><a href="#存储类型-3" class="headerlink" title="存储类型"></a>存储类型</h5><p>String类型的无序集合，最大存储数量2^32-1(40亿左右)</p>
+<h5 id="操作命令-3"><a href="#操作命令-3" class="headerlink" title="操作命令"></a>操作命令</h5><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>sadd myset a b c d e f g</td>
+<td>添加一个或多个元素</td>
+</tr>
+<tr>
+<td>smembers myset</td>
+<td>获取所有元素</td>
+</tr>
+<tr>
+<td>scard myset</td>
+<td>统计元素个数</td>
+</tr>
+<tr>
+<td>srandmember key</td>
+<td>随机获取一个元素</td>
+</tr>
+<tr>
+<td>spop myset</td>
+<td>随机弹出一个元素</td>
+</tr>
+<tr>
+<td>srem myset d e f</td>
+<td>移除一个或多个元素</td>
+</tr>
+<tr>
+<td>sismember myset a</td>
+<td>查看元素是否存在</td>
+</tr>
+</tbody></table>
+<h5 id="存储-实现-原理-3"><a href="#存储-实现-原理-3" class="headerlink" title="存储(实现)原理"></a>存储(实现)原理</h5><p>Redis 用 intset 或 hashtable 存储 set。如果元素都是整数类型，就用 inset 存储。 如果不是整数类型，就用 hashtable（数组+链表的存来储结构）。</p>
+<h5 id="应用场景-3"><a href="#应用场景-3" class="headerlink" title="应用场景"></a>应用场景</h5><ul>
+<li><p>抽奖。随机获取元素spop myset</p>
+</li>
+<li><p>点赞、签到、打卡</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">假设微博的 ID 是 t1001，用户 ID 是 u3001。</span><br><span class="line">用 like:t1001 来维护 t1001 这条微博的所有点赞用户。</span><br><span class="line">点赞了这条微博：sadd like:t1001 u3001</span><br><span class="line">取消点赞：srem like:t1001 u3001</span><br><span class="line">是否点赞：sismember like:t1001 u3001</span><br><span class="line">点赞的所有用户：smembers like:t1001</span><br><span class="line">点赞数：scard like:t1001</span><br></pre></td></tr></table></figure></li>
+<li><p>商品标签</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sadd tags:i5001 画面清晰细腻</span><br><span class="line">sadd tags:i5001 真彩清晰显示屏</span><br><span class="line">sadd tags:i5001 流畅至极</span><br></pre></td></tr></table></figure></li>
+<li><p>商品筛选</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">sdiff set1 set2 获取差集</span><br><span class="line">sinter set1 set2 获取交集(intersection)</span><br><span class="line">sunion set1 set2 获取并集</span><br></pre></td></tr></table></figure></li>
+<li><p>用户关注、推荐模型</p>
+</li>
+</ul>
+<h4 id="4-5-ZSet-有序集合"><a href="#4-5-ZSet-有序集合" class="headerlink" title="4.5 ZSet 有序集合"></a>4.5 ZSet 有序集合</h4><h5 id="存储类型-4"><a href="#存储类型-4" class="headerlink" title="存储类型"></a>存储类型</h5><p>sorted set，有序的 set，每个元素有个 score。score 相同时，按照 key 的 ASCII 码排序</p>
+<p>数据结构对比：</p>
+<table>
+<thead>
+<tr>
+<th>数据结构</th>
+<th>是否允许重复元素</th>
+<th>是否有序</th>
+<th>有序实现方式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>列表 list</td>
+<td>是</td>
+<td>是</td>
+<td>索引下标</td>
+</tr>
+<tr>
+<td>集合 set</td>
+<td>否</td>
+<td>否</td>
+<td>无</td>
+</tr>
+<tr>
+<td>有序集合 zset</td>
+<td>否</td>
+<td>是</td>
+<td>分值score</td>
+</tr>
+</tbody></table>
+<h5 id="操作命令-4"><a href="#操作命令-4" class="headerlink" title="操作命令"></a>操作命令</h5><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>zadd myzset 10 java 20 php 30 ruby 40 cpp 50 python</td>
+<td>添加元素</td>
+</tr>
+<tr>
+<td>zrange myzset 0 -1 withscores<br>zrevrange myzset 0 -1 withscores</td>
+<td>获取全部元素</td>
+</tr>
+<tr>
+<td>zrangebyscore myzset 20 30</td>
+<td>根据分值区间获取元素</td>
+</tr>
+<tr>
+<td>zrem myzset php cpp</td>
+<td>移除元素，也可以根据 score rank 删除</td>
+</tr>
+<tr>
+<td>zcard myzset</td>
+<td>统计元素个数</td>
+</tr>
+<tr>
+<td>zincrby myzset 5 python</td>
+<td>分值递增</td>
+</tr>
+<tr>
+<td>zcount myzset 20 60</td>
+<td>根据分值统计个数</td>
+</tr>
+<tr>
+<td>zrank myzset java</td>
+<td>获取元素 rank</td>
+</tr>
+<tr>
+<td>zsocre myzset java</td>
+<td>获取元素 score</td>
+</tr>
+</tbody></table>
+<h5 id="存储-实现-原理-4"><a href="#存储-实现-原理-4" class="headerlink" title="存储(实现)原理"></a>存储(实现)原理</h5><p>同时满足以下条件时使用 ziplist 编码：元素数量小于 128 个、所有 member 的长度都小于 64 字节。在 ziplist 的内部，按照 score 排序递增来存储。插入的时候要移动之后的数据。超过阈值之后，使用 skiplist+dict 存储。</p>
+<h5 id="应用场景-4"><a href="#应用场景-4" class="headerlink" title="应用场景"></a>应用场景</h5><ul>
+<li><p>排行榜</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">id 为 6001 的新闻点击数加 1：zincrby hotNews:20190926 1 n6001</span><br><span class="line">获取今天点击最多的 15 条：zrevrange hotNews:20190926 0 15 withscores</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="4-6-其它数据类型"><a href="#4-6-其它数据类型" class="headerlink" title="4.6 其它数据类型"></a>4.6 其它数据类型</h4><h5 id="4-6-1-BitMaps"><a href="#4-6-1-BitMaps" class="headerlink" title="4.6.1 BitMaps"></a>4.6.1 BitMaps</h5><p>Bitmaps 是在字符串类型上面定义的位操作。一个字节由 8 个二进制位组成。</p>
+<p>BITOP 命令支持 AND 、 OR 、 NOT 、 XOR 这四种操作中的任意一种参数：</p>
+<p>BITOP AND destkey srckey1 … srckeyN ，对一个或多个key求逻辑与，并将结果保存到 destkey </p>
+<p>BITOP OR destkey srckey1 … srckeyN，对一个或多key求逻辑或，并将结果保存到 destkey BITOP XOR destkey srckey1 … srckeyN，对一个或多个key求逻辑异或，并将结果保存到 destkey </p>
+<p>BITOP NOT destkey srckey，对给定key求逻辑非，并将结果保存到 destkey</p>
+<p>应用场景：用户访问统计、在线用户统计</p>
+<h5 id="4-6-2-Hyperloglogs"><a href="#4-6-2-Hyperloglogs" class="headerlink" title="4.6.2 Hyperloglogs"></a>4.6.2 Hyperloglogs</h5><p>Hyperloglogs：提供了一种不太准确的基数统计方法，比如统计网站的 UV，存在 一定的误差。</p>
+<h5 id="4-6-3-Streams"><a href="#4-6-3-Streams" class="headerlink" title="4.6.3 Streams"></a>4.6.3 Streams</h5><p>5.0 推出的数据类型。支持多播的可持久化的消息队列，用于实现发布订阅功能，借 鉴了 kafka 的设计</p>
+<h3 id="参考"><a href="#参考" class="headerlink" title="参考"></a>参考</h3><ul>
+<li><a target="_blank" rel="noopener" href="https://redis.io/">https://redis.io/</a></li>
+<li><a target="_blank" rel="noopener" href="http://redisdoc.com/">http://redisdoc.com/</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.redis.net.cn/">https://www.redis.net.cn/</a></li>
+<li>《Redis入门指南》李子骅</li>
+<li>《Redis 设计与实现》黄健宏</li>
+</ul>
+
+      
+    </div>
+    <footer class="article-footer">
+      <a data-url="https://moshi.site/2020/04/25/Redis%E5%9F%BA%E7%A1%80%E7%AF%87/" data-id="ckmreatxu005tyoso86fx7afr" class="article-share-link">Share</a>
+      
+	  
+        <a href="/2020/04/25/Redis%E5%9F%BA%E7%A1%80%E7%AF%87/#comments" class="article-comment-link">
+          <span class="post-comments-count valine-comment-count" data-xid="/2020/04/25/Redis%E5%9F%BA%E7%A1%80%E7%AF%87/" itemprop="commentCount"></span>
+          留言
+        </a>
+      
+      
+  <ul class="article-tag-list" itemprop="keywords"><li class="article-tag-list-item"><a class="article-tag-list-link" href="/tags/Redis/" rel="tag">Redis</a></li></ul>
+
+    </footer>
+  </div>
+  
+    
+<nav id="article-nav">
+  
+  
+    <a href="/2020/03/12/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%E7%BC%96%E5%86%99%E8%A7%84%E8%8C%83/" id="article-nav-older" class="article-nav-link-wrap">
+      <strong class="article-nav-caption">Older</strong>
+      <div class="article-nav-title">技术文档编写规范</div>
+    </a>
+  
+</nav>
+
+  
+</article>
+
+
+
+  <section id="comments" class="vcomment">
+  </section>
+
+</section>
+        
+          <aside id="sidebar">
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">分类</h3>
+    <div class="widget">
+      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/">Java Web</a><span class="category-list-count">3</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Quartz/">Quartz</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Redis/">Redis</a><span class="category-list-count">1</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-Web/Spring/">Spring</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/Java-%E5%9F%BA%E7%A1%80/">Java 基础</a><span class="category-list-count">12</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/Java-%E5%9F%BA%E7%A1%80/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/">设计模式</a><span class="category-list-count">12</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/">容器云</a><span class="category-list-count">8</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/Docker/">Docker</a><span class="category-list-count">5</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%AE%B9%E5%99%A8%E4%BA%91/K8s/">K8s</a><span class="category-list-count">3</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/">工作总结</a><span class="category-list-count">6</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/%E6%96%B9%E6%B3%95/">方法</a><span class="category-list-count">3</span></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E4%BD%9C%E6%80%BB%E7%BB%93/%E8%A7%84%E8%8C%83/">规范</a><span class="category-list-count">3</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E7%A8%8B%E5%8C%96/">工程化</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%B7%A5%E7%A8%8B%E5%8C%96/Git/">Git</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/">微服务</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E5%BE%AE%E6%9C%8D%E5%8A%A1/JHipster/">JHipster</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/%E7%B4%A2%E5%BC%95/">索引</a><span class="category-list-count">1</span></li></ul></li><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9A%8F%E7%AC%94%E6%9D%82%E8%AE%B0/">随笔杂记</a><span class="category-list-count">1</span><ul class="category-list-child"><li class="category-list-item"><a class="category-list-link" href="/categories/%E9%9A%8F%E7%AC%94%E6%9D%82%E8%AE%B0/%E8%AF%BB%E4%B9%A6/">读书</a><span class="category-list-count">1</span></li></ul></li></ul>
+    </div>
+  </div>
+
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">标签云</h3>
+    <div class="widget tagcloud">
+      <a href="/tags/Docker/" style="font-size: 16.67px;">Docker</a> <a href="/tags/Git/" style="font-size: 10px;">Git</a> <a href="/tags/JHipster/" style="font-size: 10px;">JHipster</a> <a href="/tags/K8s/" style="font-size: 13.33px;">K8s</a> <a href="/tags/Quartz/" style="font-size: 10px;">Quartz</a> <a href="/tags/Redis/" style="font-size: 10px;">Redis</a> <a href="/tags/Spring/" style="font-size: 10px;">Spring</a> <a href="/tags/%E5%B8%B8%E7%94%A8%E6%9C%AF%E8%AF%AD/" style="font-size: 10px;">常用术语</a> <a href="/tags/%E6%8E%92%E6%9F%A5%E9%97%AE%E9%A2%98/" style="font-size: 10px;">排查问题</a> <a href="/tags/%E6%90%9C%E7%B4%A2%E6%8A%80%E5%B7%A7/" style="font-size: 10px;">搜索技巧</a> <a href="/tags/%E6%96%87%E6%A1%A3%E8%A7%84%E8%8C%83/" style="font-size: 10px;">文档规范</a> <a href="/tags/%E7%89%88%E6%9C%AC%E5%91%BD%E5%90%8D/" style="font-size: 10px;">版本命名</a> <a href="/tags/%E7%B4%A2%E5%BC%95/" style="font-size: 10px;">索引</a> <a href="/tags/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F/" style="font-size: 20px;">设计模式</a> <a href="/tags/%E8%AF%BB%E4%B9%A6%E6%96%B9%E6%B3%95/" style="font-size: 10px;">读书方法</a>
+    </div>
+  </div>
+
+  
+    
+  <div class="widget-wrap">
+    <h3 class="widget-title">最新文章</h3>
+    <div class="widget">
+      <ul>
+        
+          <li>
+            <a href="/2020/04/25/Redis%E5%9F%BA%E7%A1%80%E7%AF%87/">Redis基础篇</a>
+          </li>
+        
+          <li>
+            <a href="/2020/03/12/%E6%8A%80%E6%9C%AF%E6%96%87%E6%A1%A3%E7%BC%96%E5%86%99%E8%A7%84%E8%8C%83/">技术文档编写规范</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/23/K8s%E5%9F%BA%E7%A1%80(%E4%B8%89)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E8%AF%A6%E8%A7%A3%E5%8F%8A%E7%BD%91%E7%BB%9C%E9%80%9A%E4%BF%A1/">K8s基础(三)——组件详解及网络通信</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/17/K8s%E5%9F%BA%E7%A1%80(%E4%BA%8C)%E2%80%94%E2%80%94%E6%90%AD%E5%BB%BAK8s%E9%9B%86%E7%BE%A4/">K8s基础(二)——搭建K8s集群</a>
+          </li>
+        
+          <li>
+            <a href="/2019/11/13/K8s%E5%9F%BA%E7%A1%80(%E4%B8%80)%E2%80%94%E2%80%94%E7%BB%84%E4%BB%B6%E7%AE%80%E4%BB%8B/">K8s基础(一)——组件简介</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+
+  
+</aside>
+        
+      </div>
+      <footer id="footer">
+  
+  <div class="outer">
+    <div id="footer-info" class="inner">
+      &copy; 2021 莫逝<br>
+      Powered by <a href="http://hexo.io/" target="_blank">Hexo</a>
+    </div>
+  </div>
+</footer>
+    </div>
+    <nav id="mobile-nav">
+  
+    <a href="/" class="mobile-nav-link">首页</a>
+  
+    <a href="/archives" class="mobile-nav-link">归档</a>
+  
+    <a href="/about" class="mobile-nav-link">关于我</a>
+  
+</nav>
+    
+
+
+<script src="/js/jquery-3.4.1.min.js"></script>
+
+
+
+  
+<script src="/fancybox/jquery.fancybox.min.js"></script>
+
+
+
+
+<script src="/js/script.js"></script>
+
+
+
+
+
+  
+<script src="https://unpkg.com/valine@latest/dist/Valine.min.js"></script>
+
+<script>
+    var GUEST_INFO = ['nick','mail','link'];
+    var guest_info = 'nick,mail,link'.split(',').filter(function(item){
+        return GUEST_INFO.indexOf(item) > -1
+    });
+    var notify = 'true' == true;
+    var verify = 'true' == true;
+    new Valine({
+        el: '.vcomment',
+        notify: notify,
+        verify: verify,
+        appId: "Bq4tWlGoDjJFOFoLkmRUSsQt-gzGzoHsz",
+        appKey: "t63uIiBLF5M4zBj6BYPa3uPC",
+        placeholder: "Just go go",
+        pageSize:'10',
+        avatar:'mm',
+        lang:'zh-cn'
+    });
+</script>
+
+  </div>
+</body>
+</html>
